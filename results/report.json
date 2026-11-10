@@ -1,0 +1,127 @@
+{
+  "base": "https://landed-zrx5.onrender.com",
+  "passed": 20,
+  "total": 20,
+  "results": [
+    {
+      "test": "Site is up and serves the dashboard",
+      "ok": true,
+      "detail": "",
+      "secs": 0.3
+    },
+    {
+      "test": "Create demo owner account",
+      "ok": true,
+      "detail": "",
+      "secs": 2.7
+    },
+    {
+      "test": "Create staff login and sign in as staff",
+      "ok": true,
+      "detail": "",
+      "secs": 3.6
+    },
+    {
+      "test": "Create second business (for data isolation test)",
+      "ok": true,
+      "detail": "",
+      "secs": 1.8
+    },
+    {
+      "test": "Business settings save",
+      "ok": true,
+      "detail": "",
+      "secs": 0.1
+    },
+    {
+      "test": "Exact payment marks invoice paid",
+      "ok": true,
+      "detail": "INV-101 paid via account 9063052202",
+      "secs": 0.7
+    },
+    {
+      "test": "Underpayment \u2192 part-paid, then second payment \u2192 paid",
+      "ok": true,
+      "detail": "",
+      "secs": 0.7
+    },
+    {
+      "test": "Overpayment flagged, kept as credit, credit used on next invoice",
+      "ok": true,
+      "detail": "",
+      "secs": 0.7
+    },
+    {
+      "test": "Static account: oldest invoice first, remainder held as credit",
+      "ok": true,
+      "detail": "",
+      "secs": 1.4
+    },
+    {
+      "test": "Payment to unknown account \u2192 unmatched \u2192 assigned to invoice",
+      "ok": true,
+      "detail": "",
+      "secs": 0.7
+    },
+    {
+      "test": "Cancelled invoice: later payment goes to unmatched",
+      "ok": true,
+      "detail": "",
+      "secs": 0.7
+    },
+    {
+      "test": "Webhook with bad signature is rejected",
+      "ok": true,
+      "detail": "",
+      "secs": 0.4
+    },
+    {
+      "test": "Businesses can't see each other's data",
+      "ok": true,
+      "detail": "",
+      "secs": 0.5
+    },
+    {
+      "test": "Staff can invoice but not open settings or export",
+      "ok": true,
+      "detail": "",
+      "secs": 0.4
+    },
+    {
+      "test": "Login rejects wrong password; API rejects no token",
+      "ok": true,
+      "detail": "",
+      "secs": 1.7
+    },
+    {
+      "test": "Reports and CSV export",
+      "ok": true,
+      "detail": "received \u20a6193,000 across 7 payments",
+      "secs": 0.3
+    },
+    {
+      "test": "WhatsApp bot commands",
+      "ok": true,
+      "detail": "",
+      "secs": 0.5
+    },
+    {
+      "test": "Customer receipt page",
+      "ok": true,
+      "detail": "",
+      "secs": 0.1
+    },
+    {
+      "test": "Leave a payment waiting in Unmatched for demos",
+      "ok": true,
+      "detail": "",
+      "secs": 0.2
+    },
+    {
+      "test": "Dashboard in a browser (desktop + phone)",
+      "ok": true,
+      "detail": "UI invoice created and paid; 10 screenshots",
+      "secs": 20.4
+    }
+  ]
+}
