@@ -1,0 +1,25 @@
+name: Live site test
+on:
+  push:
+    branches: [e2e]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install httpx playwright && python -m playwright install --with-deps chromium
+      - run: python e2e/live_test.py
+        env: { BASE_URL: "https://landed-zrx5.onrender.com" }
+      - name: Save results to the e2e-results branch
+        if: always()
+        run: |
+          git config user.name "live-test-bot"; git config user.email "actions@users.noreply.github.com"
+          mkdir -p /tmp/out && cp -r results/* /tmp/out/ || true
+          git checkout --orphan e2e-results && git rm -rqf . && cp -r /tmp/out/* . && git add -A
+          git commit -qm "Live test results $(date -u +%FT%TZ)" && git push -f origin e2e-results
