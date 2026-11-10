@@ -1,0 +1,46 @@
+# One command to run everything:  cp .env.example .env  (fill it in)  then  docker compose up --build
+# Dashboard: http://localhost:8080   API docs (non-production): http://localhost:8000/docs
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: landed
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-landed}
+      POSTGRES_DB: landed
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U landed"], interval: 5s, retries: 10 }
+
+  redis:
+    image: redis:7-alpine
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 5s, retries: 10 }
+
+  api:
+    build: ./backend
+    env_file: .env
+    environment: &backend_env
+      DATABASE_URL: postgresql+psycopg://landed:${POSTGRES_PASSWORD:-landed}@db:5432/landed
+      REDIS_URL: redis://redis:6379/0
+    ports: ["8000:8000"]
+    depends_on: { db: { condition: service_healthy }, redis: { condition: service_healthy } }
+
+  worker:
+    build: ./backend
+    env_file: .env
+    environment: *backend_env
+    command: python -m app.worker
+    depends_on: [api]
+
+  scheduler:
+    build: ./backend
+    env_file: .env
+    environment: *backend_env
+    command: python -m app.scheduler
+    depends_on: [api]
+
+  web:
+    build: ./web
+    ports: ["8080:80"]
+    depends_on: [api]
+
+volumes:
+  pgdata:

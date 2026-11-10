@@ -1,0 +1,44 @@
+# Render Blueprint: Dashboard → New → Blueprint → pick this repo.
+# Free plan: one web service (dashboard + API + scheduled jobs) and one Postgres database.
+# Free services sleep after ~15 min idle; the first visit after that takes about a minute.
+# For the real pilot switch the service to the Starter plan so webhooks never hit a sleeping server.
+services:
+  - type: web
+    name: landed
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: landed-db, property: connectionString }
+      - key: APP_ENV
+        value: staging            # change to production when ALLOW_MOCK_PROVIDER is false
+      - key: ALLOW_MOCK_PROVIDER
+        value: "true"             # test mode for demos; set false for real money only
+      - key: EMBED_SCHEDULER
+        value: "true"             # no separate worker on the free plan
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEYS
+        generateValue: true       # never change it once merchants have saved keys
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: MONNIFY_BASE_URL
+        value: https://sandbox.monnify.com
+      - key: WHATSAPP_DRY_RUN
+        value: "true"
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true
+
+databases:
+  - name: landed-db
+    plan: free
+    databaseName: landed
+    user: landed

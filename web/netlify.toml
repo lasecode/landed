@@ -1,0 +1,9 @@
+# Deploying the dashboard on Netlify: set VITE_API_URL to your API's public URL in Site settings → Environment.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
