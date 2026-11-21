@@ -1,6 +1,7 @@
-**/node_modules
-**/dist
-**/__pycache__
-**/*.db
+.git
+__pycache__
+*.pyc
+db.sqlite3
+staticfiles
 .env
-backend/tests
+tests

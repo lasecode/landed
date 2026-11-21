@@ -1,0 +1,13 @@
+{% load landed %}
+<table>
+  <thead><tr><th>Customer</th><th class="r">Owes</th><th class="r hide-sm">Credit</th><th class="hide-sm">How they pay</th></tr></thead>
+  <tbody>{% for r in rows %}
+    <tr class="click" hx-get="{% url 'customer_detail' r.c.pk %}" hx-target="#drawer">
+      <td><div style="display:flex;gap:12px;align-items:center"><span class="avatar" style="width:32px;height:32px;font-size:12px">{{ r.c.name|initials }}</span>
+        <div><b>{{ r.c.name }}</b><span class="sub">{{ r.c.phone|phone|default:"No number" }}</span></div></div></td>
+      <td class="r num"><b style="color:{% if r.owed %}var(--ink){% else %}var(--muted){% endif %}">{{ r.owed|naira }}</b>{% if r.open %}<span class="sub">{{ r.open }} open</span>{% endif %}</td>
+      <td class="r num hide-sm">{% if r.c.credit_balance %}{{ r.c.credit_balance|naira }}{% else %}<span class="muted">—</span>{% endif %}</td>
+      <td class="hide-sm">{% if r.acct %}<span class="mono">{{ r.acct.account_number }}</span>{% else %}<span class="muted small">Invoice link</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+</table>
+{% if not rows %}<div class="empty"><b>{% if q %}No match{% else %}No customers yet{% endif %}</b>{% if not q %}Customers are added automatically when you invoice them.{% endif %}</div>{% endif %}

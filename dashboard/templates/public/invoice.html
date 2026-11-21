@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load landed %}
+{% block title %}{% if inv.status == "paid" %}Receipt{% else %}Invoice{% endif %} {{ inv.ref }} · {{ inv.business.name }}{% endblock %}
+{% block body %}
+<div class="pay-page">
+  <div class="pay-card">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+      <div><div class="muted small">{% if inv.status == "paid" %}Receipt{% else %}Invoice{% endif %} from</div><h1 style="font-size:20px">{{ inv.business.name }}</h1></div>
+      <span class="badge b-{{ inv.status }}">{% if inv.status == "unpaid" %}Awaiting payment{% else %}{% status_label inv.status %}{% endif %}</span>
+    </div>
+    <div>
+      <div class="muted small">{{ inv.ref }}{% if inv.customer %} · {{ inv.customer.name }}{% endif %} · {{ inv.created_at|date:"j M Y" }}{% if inv.due_date and inv.is_open %} · due {{ inv.due_date|date:"j M" }}{% endif %}</div>
+      <div class="big-amt" style="margin-top:6px">{{ inv.amount|naira }}</div>
+      {% if inv.description %}<div class="muted">{{ inv.description }}</div>{% endif %}
+      <div class="progress" style="margin-top:14px"><i style="width:{{ inv.percent_paid }}%"></i></div>
+      <div class="muted small" style="margin-top:6px">{{ inv.amount_paid|naira }} paid · {{ inv.balance|naira }} remaining</div>
+    </div>
+
+    {% if inv.is_open %}
+      {% if dva %}
+      <div class="callout blue no-print"><div class="small">You have a permanent account with {{ inv.business.name }}. You can also pay into it any time:</div>
+        <div class="acct-box">{% icon "bank" %}<div style="flex:1"><div class="num">{{ dva.account_number }}</div><div class="muted small">{{ dva.bank_name }}</div></div>
+          <button class="btn sm" data-copy="{{ dva.account_number }}">{% icon "copy" %}Copy</button></div></div>
+      {% endif %}
+      <div id="pay-box" class="no-print">
+        {% if acct %}{% include "public/partials/pay_box.html" %}
+        {% else %}
+        <form class="form" hx-post="{% url 'public_pay' inv.public_token %}" hx-target="#pay-box">
+          <button class="btn primary block" style="height:48px;font-size:15px">Pay {{ inv.balance|naira }} by bank transfer</button>
+          <details><summary class="muted small" style="cursor:pointer">Pay part of it instead</summary>
+            <div style="display:flex;gap:8px;margin-top:10px"><div class="money-input" style="flex:1"><span>₦</span><input class="input" style="padding-left:28px" name="amount" inputmode="decimal" placeholder="Amount"></div>
+              <button class="btn">Get account</button></div></details>
+        </form>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if payments %}<div><div style="font-weight:600;margin-bottom:4px">Payments</div><table>
+      {% for p in payments %}<tr><td>{{ p.paid_at|date:"j M Y, H:i" }}</td><td>{{ p.payer_name }}</td><td class="r num">{{ p.amount|naira }}</td></tr>{% endfor %}</table></div>{% endif %}
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <span class="muted small">Confirmed directly with the bank, not from a screenshot.</span>
+      <button class="btn sm no-print" onclick="print()">Save as PDF</button>
+    </div>
+    <p class="foot-note">Payments are processed by Paystack. {{ inv.business.name }} receives the money directly.</p>
+  </div>
+</div>
+{% endblock %}

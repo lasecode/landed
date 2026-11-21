@@ -1,19 +1,12 @@
-# Single-service image: builds the dashboard and serves it from the API (used by render.yaml).
-FROM node:20-alpine AS web
-WORKDIR /web
-COPY web/package*.json ./
-RUN npm ci
-COPY web/ .
-RUN npm run build
-
 FROM python:3.12-slim
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 WEB_DIST=/app/web
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY backend/ .
-COPY --from=web /web/dist /app/web
-RUN useradd -m app && chown -R app /app
+COPY . .
+RUN SECRET_KEY=build-only python manage.py collectstatic --noinput \
+ && useradd -m app && chown -R app /app
 USER app
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+# migrate, make sure the admin and (test mode) demo logins exist, then serve
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py bootstrap && gunicorn config.wsgi --bind 0.0.0.0:${PORT:-8000} --workers 1 --threads 4 --timeout 60"]

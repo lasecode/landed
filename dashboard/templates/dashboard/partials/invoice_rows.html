@@ -1,0 +1,17 @@
+{% load landed %}
+<table>
+  <thead><tr><th>Invoice</th><th>Customer</th><th class="r">Amount</th><th class="r hide-sm">Paid</th><th>Status</th><th class="hide-sm">Due</th></tr></thead>
+  <tbody>
+  {% for i in invoices %}
+    <tr class="click" hx-get="{% url 'invoice_detail' i.pk %}" hx-target="#drawer">
+      <td><b class="mono">{{ i.ref }}</b><span class="sub">{{ i.description }}</span></td>
+      <td>{{ i.customer.name|default:"—" }}</td>
+      <td class="r num"><b>{{ i.amount|naira }}</b>{% if i.excess_status == "pending" %}<span class="sub" style="color:var(--amber)">+{{ i.excess_amount|naira }} extra</span>{% endif %}</td>
+      <td class="r num hide-sm">{{ i.amount_paid|naira }}</td>
+      <td><span class="badge b-{{ i.status }}">{% status_label i.status %}</span></td>
+      <td class="hide-sm muted">{{ i.due_date|date:"j M Y" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if not invoices %}<div class="empty"><b>{% if q or status %}Nothing matches{% else %}No invoices yet{% endif %}</b>{% if q or status %}Try a different filter or search.{% else %}Create your first invoice. Your customer gets a link to pay by transfer.{% endif %}</div>{% endif %}

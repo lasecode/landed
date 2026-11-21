@@ -1,7 +1,7 @@
-# Render Blueprint: Dashboard → New → Blueprint → pick this repo.
-# Free plan: one web service (dashboard + API + scheduled jobs) and one Postgres database.
-# Free services sleep after ~15 min idle; the first visit after that takes about a minute.
-# For the real pilot switch the service to the Starter plan so webhooks never hit a sleeping server.
+# Render Blueprint. The names "landed" and "landed-db" match the existing Render resources,
+# so a sync updates the live site in place.
+# Free plan: fine for demos. For real money switch the web service to Starter (it must not sleep,
+# or Paystack webhooks can time out) and the database to a paid plan (free ones expire).
 services:
   - type: web
     name: landed
@@ -12,20 +12,20 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase: { name: landed-db, property: connectionString }
+      - key: SECRET_KEY
+        generateValue: true
       - key: APP_ENV
-        value: staging            # change to production when ALLOW_MOCK_PROVIDER is false
-      - key: ALLOW_MOCK_PROVIDER
-        value: "true"             # test mode for demos; set false for real money only
+        value: staging          # production once PAYMENT_PROVIDER=paystack with a live key
+      - key: PAYMENT_PROVIDER
+        value: mock             # test mode until Landed's Paystack account is approved
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_DVA_BANK
+        value: test-bank        # wema-bank or titan-paystack with a live key
+      - key: LANDED_FEE_PERCENT
+        value: "1.0"
       - key: EMBED_SCHEDULER
-        value: "true"             # no separate worker on the free plan
-      - key: JWT_SECRET
-        generateValue: true
-      - key: ENCRYPTION_KEYS
-        generateValue: true       # never change it once merchants have saved keys
-      - key: ADMIN_TOKEN
-        generateValue: true
-      - key: MONNIFY_BASE_URL
-        value: https://sandbox.monnify.com
+        value: "true"
       - key: WHATSAPP_DRY_RUN
         value: "true"
       - key: WHATSAPP_TOKEN
@@ -36,6 +36,12 @@ services:
         sync: false
       - key: WHATSAPP_VERIFY_TOKEN
         generateValue: true
+      - key: ADMIN_PHONE
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
 
 databases:
   - name: landed-db

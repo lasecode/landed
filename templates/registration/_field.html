@@ -1,0 +1,6 @@
+<div class="field">
+  <label for="{{ f.id_for_label }}">{{ f.label }}</label>
+  {{ f }}
+  {% if f.help_text %}<span class="hint">{{ f.help_text }}</span>{% endif %}
+  {% if f.errors %}<ul class="errorlist">{% for e in f.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+</div>

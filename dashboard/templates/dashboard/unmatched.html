@@ -1,0 +1,12 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Unmatched{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Unmatched payments</h1>
+  <p>Money that landed but couldn't be tied to an invoice, for example a transfer to a cancelled invoice. Tell us who it's from.</p></div></div>
+<div class="table-card"><div class="table-scroll"><table>
+  <thead><tr><th>From</th><th class="r">Amount</th><th class="hide-sm">Why</th><th class="hide-sm">When</th><th></th></tr></thead>
+  <tbody>{% for p in rows %}<tr class="click" hx-get="{% url 'payment_assign' p.pk %}" hx-target="#drawer">
+    <td><b>{{ p.payer_name|default:"Unknown sender" }}</b><span class="sub mono">to {{ p.account_number|default:"—" }}</span></td>
+    <td class="r num"><b>{{ p.amount|naira }}</b></td><td class="hide-sm muted">{{ p.unmatched_reason }}</td>
+    <td class="hide-sm muted">{{ p.paid_at|date:"j M, H:i" }}</td><td class="r"><span class="btn sm">Assign</span></td></tr>{% endfor %}</tbody>
+</table>{% if not rows %}<div class="empty"><b>All clear</b>Every payment has been matched.</div>{% endif %}</div></div>
+{% endblock %}

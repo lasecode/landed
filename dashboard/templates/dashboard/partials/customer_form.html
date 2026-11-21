@@ -1,0 +1,12 @@
+{% load landed %}
+<div class="scrim" data-close></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-label="Add customer">
+  <div class="drawer-head"><h2>Add customer</h2><button class="x" data-close aria-label="Close">{% icon "x" %}</button></div>
+  <form class="drawer-body form" id="cust-form" hx-post="{% url 'customer_new' %}" hx-target="#drawer">
+    {% if errors %}<div class="error">{{ errors|join:" " }}</div>{% endif %}
+    <div class="field"><label for="cn">Name</label><input id="cn" name="name" value="{{ post.name }}" required autofocus></div>
+    <div class="field"><label for="cp">WhatsApp number</label><input id="cp" name="phone" type="tel" inputmode="tel" placeholder="0803 123 4567" value="{{ post.phone }}">
+      <span class="hint">Invoices, receipts and reminders go here.</span></div>
+  </form>
+  <div class="drawer-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" form="cust-form">Save</button></div>
+</aside>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% load landed %}
+{% block body %}
+<div class="shell">
+  <aside class="side">
+    <div class="logo"><span class="logo-mark">{% icon "check" %}</span><b>Landed</b></div>
+    <div class="biz">
+      <span class="avatar">{{ business.name|initials }}</span>
+      <div style="min-width:0"><b>{{ business.name }}</b><span>{{ request.user.name }} · {{ request.user.get_role_display }}</span></div>
+    </div>
+    {% with u=request.resolver_match.url_name %}
+    <nav class="nav">
+      <a href="{% url 'overview' %}" class="{% if u == 'overview' %}active{% endif %}">{% icon "home" %}Overview</a>
+      <a href="{% url 'invoices' %}" class="{% if u == 'invoices' %}active{% endif %}">{% icon "invoice" %}Invoices</a>
+      <a href="{% url 'customers' %}" class="{% if u == 'customers' %}active{% endif %}">{% icon "users" %}Customers</a>
+      <a href="{% url 'unmatched' %}" class="{% if u == 'unmatched' %}active{% endif %}">{% icon "alert" %}Unmatched{% if nav_unmatched %}<span class="count">{{ nav_unmatched }}</span>{% endif %}</a>
+      <a href="{% url 'reports' %}" class="{% if u == 'reports' %}active{% endif %}">{% icon "chart" %}Reports</a>
+      {% if request.user.is_owner %}<a href="{% url 'settings' %}" class="{% if u == 'settings' or u == 'payout_setup' %}active{% endif %}">{% icon "settings" %}Settings</a>{% endif %}
+    </nav>
+    <div class="side-foot">
+      {% if test_mode %}<a href="{% url 'bot' %}" class="{% if u == 'bot' %}active{% endif %}">{% icon "chat" %}Try the WhatsApp bot</a>{% endif %}
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>{% icon "logout" %}Sign out</button></form>
+    </div>
+    {% endwith %}
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" data-menu aria-label="Open menu">{% icon "menu" %}</button>
+      <div class="top-right">{% if test_mode %}<span class="test-tag" title="Payments are simulated until Landed's Paystack account is connected">Test mode</span>{% endif %}</div>
+    </header>
+    <main class="content" id="page">
+      {% for m in messages %}<div class="flash {% if m.tags == 'error' %}error{% endif %}">{{ m }}</div>{% endfor %}
+      {% if business and not business.can_receive_payments and request.resolver_match.url_name != 'payout_setup' %}
+      <div class="banner"><span>{% icon "bank" %}</span><p><b>Add the bank account you want to be paid into.</b> Customers can't pay you until it's set up. It takes a minute.</p>
+        {% if request.user.is_owner %}<a class="btn sm primary" href="{% url 'payout_setup' %}">Set up payouts</a>{% endif %}</div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+<div id="drawer"></div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "registration/auth_base.html" %}{% block title %}Create your account{% endblock %}
+{% block card %}
+<form method="post" class="form">{% csrf_token %}
+  <div><h1>Create your account</h1><p class="muted" style="margin-top:4px">No CAC needed. You'll add the bank account you want to be paid into next.</p></div>
+  {% for f in form %}{% include "registration/_field.html" %}{% endfor %}
+  <button class="btn primary block">Create account</button>
+  <p class="muted small" style="text-align:center">Already have an account? <a class="link" href="{% url 'login' %}">Sign in</a></p>
+</form>
+{% endblock %}

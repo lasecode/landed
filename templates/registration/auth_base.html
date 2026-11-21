@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% load landed %}
+{% block body %}
+<div class="auth">
+  <div class="auth-side">
+    <div class="logo"><span class="logo-mark">{% icon "check" %}</span><b>Landed</b></div>
+    <div><h2>Stop checking your bank app.</h2>
+      <p>Every invoice gets its own account number. When the transfer lands, you and your customer both get a WhatsApp confirmation. Fake receipts do nothing.</p></div>
+    <p class="quote">Confirmation comes from the bank, not from a screenshot.</p>
+  </div>
+  <div class="auth-main"><div class="auth-card">{% block card %}{% endblock %}</div></div>
+</div>
+{% endblock %}

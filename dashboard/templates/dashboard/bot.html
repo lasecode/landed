@@ -1,0 +1,11 @@
+{% extends "app.html" %}{% load landed %}{% block title %}WhatsApp bot{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Try the WhatsApp bot</h1><p>Once WhatsApp is connected you'll send these same messages from your phone. Invoices made here are real test invoices.</p></div></div>
+<section class="panel" style="max-width:520px;padding:14px">
+  <div class="chat" id="chat" aria-live="polite"><div class="msg in"><div class="bub">Hi {{ request.user.name|first_word }} 👋 This is how the bot works on WhatsApp. Try a command below.</div></div></div>
+  <div class="chips">{% for s in samples %}<button class="chip" hx-post="{% url 'bot' %}" hx-vals='{"text": "{{ s }}"}' hx-target="#chat" hx-swap="beforeend scroll:bottom">{{ s }}</button>{% endfor %}</div>
+  <form class="composer" hx-post="{% url 'bot' %}" hx-target="#chat" hx-swap="beforeend scroll:bottom" hx-on::after-request="this.reset()">
+    <input name="text" placeholder="Type a message" aria-label="Message" autocomplete="off">
+    <button class="btn primary" style="border-radius:99px;width:40px;padding:0" aria-label="Send">{% icon "send" %}</button></form>
+</section>
+{% endblock %}

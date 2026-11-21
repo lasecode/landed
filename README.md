@@ -1,110 +1,94 @@
-# Landed: payment confirmation & reconciliation
+# Landed (Django)
 
-Every invoice (or regular customer) gets its own bank account number. When the customer transfers, the provider tells us, we **verify the payment with the provider**, match it to the invoice, update the ledger, and send WhatsApp confirmations to the merchant and the customer. A fake transfer screenshot does nothing.
+Payment confirmation for Nigerian sellers who get paid by bank transfer, including sellers with no CAC registration.
 
-"Landed" is a placeholder name. To rename, change `APP_NAME` and the word "Landed" in `web/src` (sidebar, login page, `index.html`).
+**How the money moves:** Landed holds one Paystack account, and each seller is a Paystack sub-account that pays out to their own bank. When a customer opens an invoice link and taps **Pay**, Landed gets a one-time account number from Paystack, tagged with that seller. The customer transfers to it, and Paystack splits the money automatically: the seller's share goes to their bank, and Landed's fee goes to Landed. Landed never holds seller money. Regular customers can also get a permanent account number, with the same split.
+
+Every payment is **verified with Paystack** before it counts. A fake screenshot or a forged webhook does nothing. Then the ledger is updated and WhatsApp messages go out to the seller and the customer.
+
+## Stack
+
+Django 5.2 · PostgreSQL · Celery + Redis (optional; jobs run inline without it) · Django templates + HTMX · WhiteNoise · Gunicorn.
 
 ```
-landed/
-├── backend/            FastAPI API, matching engine, worker, scheduler (Python)
-│   ├── app/
-│   │   ├── providers/  PaymentProvider interface + Monnify + Mock (test mode)
-│   │   ├── services/   matching.py (the engine), invoicing.py, notify.py
-│   │   ├── whatsapp/   Cloud API client, templates, bot command parser
-│   │   ├── routers/    HTTP endpoints (dashboard API, webhooks, receipts, admin)
-│   │   ├── jobs.py     webhook processing, reconciliation, reminders, expiry
-│   │   ├── worker.py   RQ worker        scheduler.py  periodic jobs
-│   ├── migrations/     Alembic (database schema)
-│   └── tests/          33 tests: every matching rule, security rules, bot, Monnify adapter
-├── web/                React dashboard (Vite)
-├── docs/whatsapp-templates.md
-└── docker-compose.yml  Postgres, Redis, API, worker, scheduler, dashboard
+accounts/    User (phone login, owner/staff roles), Business (a seller, with payout bank and Paystack sub-account)
+payments/    Customer, Invoice, VirtualAccount, Payment, LedgerEntry, WebhookEvent
+  providers/   Provider interface · paystack.py (live) · mock.py (test mode)
+  services/    matching.py (the matching rules) · invoicing.py (invoices, payout setup, account numbers)
+  tasks.py     webhook processing, reconciliation, expiry, reminders
+  views.py     Paystack webhook
+messaging/   WhatsApp Cloud API client, templates, seller bot, outbox (Notification), WhatsApp webhook
+dashboard/   seller dashboard pages, the public pay page (/pay/<token>/), demo-data command
+tests/       33 tests: every matching rule, security rules, pages, the pay flow, bot, Paystack adapter
 ```
 
-## Run it
+## Run it locally
 
-### With Docker (everything in one go)
 ```bash
-cp .env.example .env        # set JWT_SECRET and ENCRYPTION_KEYS (commands are in the file)
-docker compose up --build
-```
-Open http://localhost:8080 and create an account. You start in **test mode**:
-- Open any invoice → **Test a payment** sends a simulated transfer. It goes through the real path: signed webhook → queue → worker → verify → matching → WhatsApp (logged).
-- **Try the WhatsApp bot** in the sidebar runs the same commands merchants will send on WhatsApp.
-
-### Without Docker (development)
-Needs Python 3.11+, Node 20+, and optionally PostgreSQL and Redis.
-```bash
-cd backend
-pip install -r requirements.txt -r requirements-dev.txt
-uvicorn app.main:app --reload              # SQLite by default; tables are created automatically in development
-# optional: export REDIS_URL=redis://localhost:6379/0 and run `python -m app.worker` + `python -m app.scheduler`
-# without REDIS_URL, background jobs run inline. Fine for local work.
-
-cd ../web && npm install && npm run dev    # http://localhost:5173 (proxies /api to :8000)
+pip install -r requirements-dev.txt
+cp .env.example .env              # optional; the defaults work with SQLite in test mode
+python manage.py migrate
+python manage.py seed_demo --password choose-a-password   # demo seller 07000000001 with sample data
+python manage.py createsuperuser  # your Landed admin login (/admin/)
+python manage.py runserver
+pytest                            # the test suite
 ```
 
-### Tests
-```bash
-cd backend && pytest                                                             # SQLite
-TEST_DATABASE_URL=postgresql+psycopg://user:pass@localhost/landed_test pytest   # PostgreSQL
-```
+**Test mode** (`PAYMENT_PROVIDER=mock`) behaves like Paystack without real money:
+- Bank account names are "resolved".
+- Every invoice drawer has a **Test a payment** box. It sends a transfer through the real signed-webhook and verification path.
+- **Try the WhatsApp bot** in the sidebar runs the same commands sellers will send on WhatsApp.
 
-## How the brief maps to the code
+## The flows
 
-| Brief | Where |
-|---|---|
-| §4.3 Provider interface (`create_static_account`, `create_dynamic_account`, `verify_transaction`, `list_transactions`, `verify_webhook_signature`) | `providers/base.py`; Monnify in `providers/monnify.py` |
-| §7 Matching engine: exact, under, over, accumulate, static → oldest invoice then credit, expired/unknown → unmatched, duplicates ignored | `services/matching.py` (tests: `tests/test_matching.py`) |
-| §8.1 Data model | `app/models.py` (money stored as integer kobo) |
-| §8.2 Webhook flow: verify signature → queue → 200; worker: idempotency → verify with provider → match → ledger → notify | `routers/webhooks.py` → `jobs.process_webhook_event` |
-| §9 Security: signatures, idempotency (unique `provider_reference`), verify-before-trust, reconciliation job, ledger, encrypted keys, merchant scoping | tests: `tests/test_security.py` |
-| §5 WhatsApp: bot (`invoice`, `today`, `unpaid`), invoice/receipt/balance/reminder messages via templates, 24h rule | `whatsapp/`, `routers/whatsapp.py`, `services/notify.py` |
-| §6 Dashboard pages + Owner/Staff roles | `web/src/pages/*`, `deps.owner` |
-| §8 Scheduler: reminders, expiry, reconciliation | `scheduler.py` |
-| §10 Freemium cap | `FREE_PLAN_INVOICE_CAP`, `services/invoicing.PLAN_CAPS` |
-| Admin (us): merchants, webhook monitor, replay, reconcile | `routers/admin.py` (header `X-Admin-Token`) |
+1. **Seller signs up:** phone number and password, no CAC. They then add the bank account they want to be paid into (any bank, personal accounts included). Landed checks the account name with Paystack and creates their sub-account, taking `LANDED_FEE_PERCENT` as Landed's cut.
+2. **Invoice:** the seller creates it in the dashboard, or on WhatsApp ("invoice Tunde 45000 for rice"). The customer gets a WhatsApp message with a pay link.
+3. **Pay page:** the customer taps **Pay**, and Paystack's Pay with Transfer issues a one-time account number for that amount. It's valid for up to `PAY_LINK_HOURS`, and the customer can choose to pay part of the balance. The page checks every 5 seconds and turns into a receipt when the money lands. An "I've sent it" button asks Paystack directly, in case a webhook is late.
+4. **Confirmation:** Paystack sends a signed webhook. Landed checks the signature, then calls `GET /transaction/verify` before any money counts, and then applies the matching rules:
+
+   | What arrived | What Landed does |
+   |---|---|
+   | Exact amount | Paid |
+   | Less than the balance | Part-paid, plus a balance notice to the customer |
+   | More than the balance | Paid, with the excess flagged for the seller to refund or keep as credit |
+   | Payment into a customer's permanent account | Applied to their oldest invoices first, the rest held as credit |
+   | Payment for a cancelled invoice, or to an unknown account | The Unmatched queue |
+   | The same reference again | Ignored |
+
+5. **Safety net:** reconciliation runs every 3 hours and picks up any payment whose webhook never arrived.
+
+## Landed's own back office
+
+`/admin/` (Django admin, for `is_staff` users) gives you:
+- **Businesses** (sellers), with their payout details and sub-account codes, plus suspend and re-activate.
+- **Payments, invoices, customers and account numbers.**
+- **Webhook events**, with a "re-process" action.
+- **Reconciliation runs.**
+- **Every WhatsApp message sent.**
 
 ## Going live
 
-### 1. Deploy
+1. **Landed's Paystack account.** Register Landed with CAC, open a Paystack Registered Business account, and ask Paystack support to switch on:
+   - **dedicated virtual accounts**,
+   - **Pay with Transfer through the Charge API**, and
+   - **split payments / sub-accounts** for your use case.
 
-**Quickest: Render free plan, one service.** Push this folder to a GitHub repo. In Render, go to **New → Blueprint** and pick the repo. `render.yaml` creates the database and a single web service that serves the dashboard, the API and the scheduled jobs at one URL. Secrets are generated for you. Test mode is on, so this is ready for client demos. Free services sleep after ~15 minutes idle, so move to the Starter plan before real payments.
+   Confirm three things with them: that sub-accounts can settle to sellers' personal accounts, how fast sub-accounts are settled, and what customers see as the account name.
+2. **Configure:** set `PAYMENT_PROVIDER=paystack`, `PAYSTACK_SECRET_KEY` (test key first), `PAYSTACK_DVA_BANK=test-bank`, then switch to the live key with `wema-bank` or `titan-paystack`. In the Paystack dashboard, set the webhook URL to `https://<your-domain>/webhooks/paystack/`.
+3. **Test with Paystack test keys:** sign up a seller, add a payout account, pay an invoice, and check the split in Paystack's dashboard.
+4. **Check one behaviour:** what Paystack does when a customer sends a **different amount** to a one-time account. The pay page asks for the exact amount, but a wrong amount may be accepted or reversed. Test it in test mode.
+5. **WhatsApp:** submit the 9 templates in `messaging/whatsapp/templates.py` (category Utility, language `en`, names exactly as written). When they're approved, set `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET` and `WHATSAPP_DRY_RUN=false`, and point Meta's webhook at `https://<your-domain>/webhooks/whatsapp/`.
+6. **Production mode:** set `APP_ENV=production`. The app refuses to start without a real `SECRET_KEY`, PostgreSQL and a Paystack key, and it switches on HTTPS-only cookies and HSTS.
+7. **Email:** set SMTP variables so password-reset emails go out. Until then they're printed to the log.
 
-**Full setup:** The API, worker and scheduler use the **same image** with different commands (see `docker-compose.yml`).
-- **Render / Railway:** one Postgres, one Redis, one web service (`backend/Dockerfile`), two background workers (`python -m app.worker`, `python -m app.scheduler`).
-- **Dashboard:** serve `web/` behind the same domain via `web/nginx.conf`, or put it on Netlify (`web/netlify.toml`, set `VITE_API_URL` to the API URL).
-- Set `APP_ENV=production`. The API **refuses to start** if `JWT_SECRET`, `ENCRYPTION_KEYS` or Postgres is missing, or if the mock provider is still enabled.
-- The container runs `alembic upgrade head` on start. After changing models: `alembic revision --autogenerate -m "..."`.
-- Back up `ENCRYPTION_KEYS` somewhere safe. Without them, saved merchant keys can't be decrypted.
+## Deploy (Render)
 
-### 2. Monnify (each merchant, Option A)
-1. The merchant completes Monnify KYC: CAC documents, TIN, director BVN/NIN, and a settlement account in the business name.
-2. Dashboard → **Settings → Payment provider**: paste the API key, secret key and contract code. We test them before saving, then encrypt them at rest.
-3. Copy the **webhook URL** shown there (`…/webhooks/monnify/<merchant-token>`) into Monnify → Settings → Webhook URLs → *Transaction completion*.
-4. Do one sandbox transfer, then tick "live keys".
+`render.yaml` describes a Docker web service and a Postgres database. On every start the container runs migrations, then `bootstrap` (creates the admin login from `ADMIN_PHONE`/`ADMIN_PASSWORD` and, in test mode, the demo seller from `DEMO_PASSWORD`), then Gunicorn. With one web instance and no Redis, background jobs run inline and the scheduler runs inside the web process (`EMBED_SCHEDULER=true`). When volume grows, add Redis, set `REDIS_URL`, run `celery -A config worker -B` as a worker, and set `EMBED_SCHEDULER=false`.
 
-**Check in the Monnify sandbox before the pilot:**
-- Do invoice accounts accept a **part payment**, or reject anything but the exact amount? It depends on the contract's under/over-payment settings. If partials are rejected, part payments only happen through static (per-customer) accounts.
-- Static accounts need the **customer's BVN or NIN** (CBN rule). The dashboard asks for it, passes it to Monnify, and does not store it.
-- Monnify sends webhooks only from IP `35.242.133.146`. You can also allowlist it at your load balancer.
+Use a paid web plan for real money. A free instance sleeps, and the first webhook after a sleep can time out (Paystack retries, and reconciliation catches it, but it's slower).
 
-### 3. WhatsApp Cloud API
-1. Create a Meta app with the WhatsApp product and add the business phone number. Set `WHATSAPP_TOKEN` (a permanent system-user token), `WHATSAPP_PHONE_NUMBER_ID` and `WHATSAPP_APP_SECRET`.
-2. Webhook: callback URL `https://<api>/webhooks/whatsapp`, verify token = `WHATSAPP_VERIFY_TOKEN`. Subscribe to `messages`.
-3. Submit the 8 templates in [`docs/whatsapp-templates.md`](docs/whatsapp-templates.md). Once they're approved, set `WHATSAPP_DRY_RUN=false`.
-4. Merchants and staff use the bot from the phone number on their login. Unknown numbers get no reply.
+## Not built yet
 
-### 4. Pilot checklist (Phase 4)
-- [ ] `APP_ENV=production`, real secrets, `ALLOW_MOCK_PROVIDER=false`
-- [ ] Each pilot merchant: Monnify keys saved, webhook URL pasted, one ₦100 live test
-- [ ] Templates approved; send yourself an invoice end to end
-- [ ] Watch `GET /admin/health` daily: failed webhooks, failed messages, unmatched payments, reconciliation runs
-
-## What's not built yet
-- **Paystack and Flutterwave adapters.** The interface is ready; they're stubs in `providers/__init__.py`.
-- **Admin UI.** The admin endpoints exist; use them with curl or the `/docs` page in non-production.
-- **Self-service password reset.** For now an owner resets a staff password by removing the login and adding it again; an owner's own reset is done manually by us.
-- **PDF receipts.** The receipt is a printable page ("Save as PDF"). A server-side PDF can be added if merchants need it.
-- **Login throttling** is per process. With several API instances, move it to Redis.
-- **Option B** (sub-accounts, take rate) waits on the legal opinion.
+- Password reset by WhatsApp code. Email reset works; a WhatsApp reset needs an approved Authentication template.
+- Seller identity checks beyond the bank-account name match. Review new sellers in the admin, and add BVN verification once Paystack's identity API is available to Landed.
+- A Paystack payout/settlement report inside the dashboard. Settlement details are in Paystack's own dashboard for now.

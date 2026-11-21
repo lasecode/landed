@@ -1,0 +1,17 @@
+{% load landed %}
+{% if error %}<div class="error">{{ error }}</div>
+{% elif acct %}
+<div class="form">
+  <div class="muted">Transfer exactly <b style="color:var(--ink)">{{ acct.amount|naira }}</b> to:</div>
+  <div class="acct-box" style="flex-wrap:wrap">
+    <div style="flex:1;min-width:0"><div class="acct">{{ acct.account_number }}</div>
+      <div class="muted small">{{ acct.bank_name }}{% if acct.account_name %} · {{ acct.account_name }}{% endif %}</div></div>
+    <button class="btn sm" data-copy="{{ acct.account_number }}">{% icon "copy" %}Copy</button>
+  </div>
+  <div class="small muted">This account is just for this payment. It stays open until <b class="countdown">{{ acct.expires_at|date:"j M, H:i" }}</b>.</div>
+  <div hx-get="{% url 'public_status' inv.public_token %}?paid_before={{ inv.amount_paid }}" hx-trigger="every 5s" hx-swap="innerHTML">
+    <span class="pulse"></span><span class="small">Waiting for your transfer… this page updates by itself.</span>
+  </div>
+  <button class="btn block" hx-get="{% url 'public_status' inv.public_token %}?paid_before={{ inv.amount_paid }}&check=1" hx-target="previous div" hx-swap="innerHTML">I've sent it</button>
+</div>
+{% endif %}

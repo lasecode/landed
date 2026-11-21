@@ -1,0 +1,10 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Customers{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Customers</h1><p>{{ rows|length }} customer{{ rows|length|pluralize }} · {{ total_owed|naira }} owed to you in total</p></div>
+  <button class="btn" hx-get="{% url 'customer_new' %}" hx-target="#drawer">{% icon "plus" %}Add customer</button>
+</div>
+<div class="toolbar"><span></span><label class="search">{% icon "search" %}<input type="search" name="q" value="{{ q }}" placeholder="Search customers"
+  hx-get="{% url 'customers' %}" hx-trigger="input changed delay:300ms, search" hx-target="#customer-table"></label></div>
+<div class="table-card"><div class="table-scroll" id="customer-table">{% include "dashboard/partials/customer_rows.html" %}</div></div>
+{% endblock %}
