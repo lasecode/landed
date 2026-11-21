@@ -26,3 +26,11 @@ class WhatsAppContact(models.Model):
     """Last inbound message per number, for WhatsApp's 24-hour free-form window."""
     phone = models.CharField(max_length=20, primary_key=True)
     last_inbound_at = models.DateTimeField(default=timezone.now)
+
+
+class BotSession(models.Model):
+    """Where a seller is in a menu conversation (like a USSD session). Expires after a few minutes idle."""
+    phone = models.CharField(max_length=20, primary_key=True)
+    state = models.CharField(max_length=40, default="menu")
+    data = models.JSONField(default=dict, blank=True)
+    updated_at = models.DateTimeField(default=timezone.now)

@@ -491,7 +491,7 @@ def bot_tester(request):
         with transaction.atomic():
             reply = bot.handle(request.user, text)
         return render(request, "dashboard/partials/bot_exchange.html", {"text": text, "reply": reply})
-    return render(request, "dashboard/bot.html", {"samples": ["invoice Tunde 45000 for 3 bags of rice", "today", "unpaid", "help"]})
+    return render(request, "dashboard/bot.html", {"samples": ["menu", "1", "2", "3", "0"]})
 
 
 # ---------- public invoice / pay page ----------
