@@ -1,0 +1,26 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Settings</h1></div></div>
+<div class="set-grid">
+  <section class="panel"><div class="panel-head"><h2>Business</h2></div>
+    <form method="post" class="form panel-body">{% csrf_token %}<input type="hidden" name="section" value="business">
+      {% for f in form %}{% include "registration/_field.html" %}{% endfor %}
+      <div><button class="btn primary">Save changes</button></div></form></section>
+  <section class="panel"><div class="panel-head"><h2>Payouts</h2>{% if business.can_receive_payments %}<span class="ok-pill small">{% icon "check" %}Active</span>{% endif %}</div>
+    <div class="panel-body form">
+      {% if business.payout_account_name %}<p>Your share of every payment goes to <b>{{ business.payout_account_name }}</b>, {{ business.payout_bank_name }} {{ business.payout_account_number }}.</p>
+      {% else %}<p class="muted">No payout account yet. Customers can't pay you until you add one.</p>{% endif %}
+      <p class="muted small">Paystack sends the money straight to this account; Landed never holds it. Landed's fee is taken automatically from each payment.</p>
+      <div><a class="btn sm" href="{% url 'payout_setup' %}">{% if business.payout_account_name %}Change account{% else %}Add payout account{% endif %}</a></div></div></section>
+  <section class="panel"><div class="panel-head"><h2>Staff logins</h2></div>
+    <p class="muted small" style="padding:0 22px 8px">Staff can create invoices and see payments. They can't change settings or export reports. Their WhatsApp number can also use the bot.</p>
+    {% for u in staff %}<div class="set-row"><div><b>{{ u.name }}</b><span>{{ u.phone|phone }} · {{ u.get_role_display }}</span></div>
+      {% if u != request.user %}<form method="post" action="{% url 'staff_remove' u.pk %}" onsubmit="return confirm('Remove {{ u.name|escapejs }}\'s login?')">{% csrf_token %}<button class="btn sm danger">Remove</button></form>{% endif %}</div>{% endfor %}
+    <details class="set-row" style="display:block" {% if show_staff_form %}open{% endif %}><summary class="btn sm" style="display:inline-flex">{% icon "plus" %}Add a login</summary>
+      <form method="post" class="form" style="margin-top:14px">{% csrf_token %}<input type="hidden" name="section" value="staff">
+        <div class="row2">{% with f=staff_form.name %}{% include "registration/_field.html" %}{% endwith %}{% with f=staff_form.phone %}{% include "registration/_field.html" %}{% endwith %}</div>
+        <div class="row2">{% with f=staff_form.password %}{% include "registration/_field.html" %}{% endwith %}{% with f=staff_form.role %}{% include "registration/_field.html" %}{% endwith %}</div>
+        <div><button class="btn primary">Create login</button></div></form></details>
+  </section>
+</div>
+{% endblock %}

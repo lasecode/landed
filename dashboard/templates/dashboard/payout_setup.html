@@ -1,0 +1,14 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Payouts{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Where should we send your money?</h1>
+  <p>When a customer pays, Paystack sends your share straight to this account. Landed never holds your money. A personal account is fine, including Moniepoint, OPay and Kuda.</p></div></div>
+<section class="panel" style="max-width:560px">
+  <form method="post" class="form panel-body" style="padding-top:20px">{% csrf_token %}
+    {% if business.payout_account_name %}<div class="callout blue"><div class="small">Currently paying out to <b>{{ business.payout_account_name }}</b>, {{ business.payout_bank_name }} {{ business.payout_account_number }}.</div></div>{% endif %}
+    {% with f=form.bank_code %}{% include "registration/_field.html" %}{% endwith %}
+    {% with f=form.account_number %}{% include "registration/_field.html" %}{% endwith %}
+    <p class="muted small">We check the account name with the bank before saving. Use an account in your own name.</p>
+    <div><button class="btn primary">Check and save</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% load landed %}
+<div class="scrim" data-close></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-label="{{ c.name }}">
+  <div class="drawer-head"><div><h2>{{ c.name }}</h2><div class="muted small" style="margin-top:2px">{{ c.phone|phone|default:"No WhatsApp number" }}</div></div>
+    <button class="x" data-close aria-label="Close">{% icon "x" %}</button></div>
+  <div class="drawer-body">
+    <dl class="kv"><dt>Owes you</dt><dd class="num">{{ owed|naira }}</dd><dt>Credit with you</dt><dd class="num">{{ c.credit_balance|naira }}</dd>
+      <dt>Customer since</dt><dd>{{ c.created_at|date:"j M Y" }}</dd></dl>
+    <div><div class="section-title">Permanent account</div>
+      {% if acct %}<div class="acct-box">{% icon "bank" %}<div style="flex:1"><div class="num">{{ acct.account_number }}</div><div class="muted small">{{ acct.bank_name }}</div></div>
+        <button class="btn sm" data-copy="{{ acct.account_number }}">{% icon "copy" %}Copy</button></div>
+        <p class="muted small" style="margin-top:6px">Anything {{ c.first_name }} sends here pays their oldest invoice first. The rest is kept as credit.</p>
+      {% else %}<p class="muted small" style="margin-bottom:10px">Regular customers can have one account number that never changes, so they can save it in their bank app.</p>
+        <button class="btn sm" hx-post="{% url 'customer_account' c.pk %}" hx-target="#drawer">{% icon "bank" %}Give {{ c.first_name }} a permanent account</button>{% endif %}
+    </div>
+    <div><div class="section-title">Invoices</div><div class="list">
+      {% for i in invoices %}<button class="li" style="grid-template-columns:1fr auto" hx-get="{% url 'invoice_detail' i.pk %}" hx-target="#drawer">
+        <span><span class="li-name mono">{{ i.ref }}</span> <span class="badge b-{{ i.status }}">{% status_label i.status %}</span>
+          <span class="li-sub" style="display:block">{{ i.description|default:"—" }} · {{ i.created_at|date:"j M" }}</span></span>
+        <span class="li-amt">{{ i.amount|naira }}{% if i.is_open %}<small>{{ i.balance|naira }} left</small>{% endif %}</span></button>
+      {% empty %}<p class="muted small">No invoices yet.</p>{% endfor %}</div></div>
+    {% if payments %}<div><div class="section-title">Payments</div><div class="list">
+      {% for p in payments %}<div class="li" style="grid-template-columns:1fr auto"><span><span class="li-name">{{ p.invoice.ref|default:"Held as credit" }}</span>
+        <span class="li-sub" style="display:block">{{ p.payer_name }} · {{ p.paid_at|date:"j M, H:i" }}</span></span><span class="li-amt">{{ p.amount|naira }}</span></div>{% endfor %}
+    </div></div>{% endif %}
+  </div>
+  <div class="drawer-foot"><button class="btn primary" hx-get="{% url 'invoice_new' %}?customer={{ c.pk }}" hx-target="#drawer">{% icon "plus" %}New invoice for {{ c.first_name }}</button></div>
+</aside>

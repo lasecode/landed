@@ -1,0 +1,16 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Invoices{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Invoices</h1><p>Customers pay through the invoice link, so every payment matches itself.</p></div>
+  <button class="btn primary" hx-get="{% url 'invoice_new' %}" hx-target="#drawer">{% icon "plus" %}New invoice</button>
+</div>
+<div class="toolbar">
+  <div class="tabs" role="tablist">
+    {% for key, label in tabs %}<a class="tab{% if status == key %} on{% endif %}" href="?status={{ key }}">{{ label }}{% if key %}{% for k, n in counts.items %}{% if k == key %} <span class="n">{{ n }}</span>{% endif %}{% endfor %}{% endif %}</a>{% endfor %}
+    {% if status == "overpaid" %}<a class="tab on">Overpaid</a>{% endif %}
+  </div>
+  <label class="search">{% icon "search" %}<input type="search" name="q" value="{{ q }}" placeholder="Search name, INV-number…"
+    hx-get="{% url 'invoices' %}?status={{ status }}" hx-trigger="input changed delay:300ms, search" hx-target="#invoice-table"></label>
+</div>
+<div class="table-card"><div class="table-scroll" id="invoice-table">{% include "dashboard/partials/invoice_rows.html" %}</div></div>
+{% endblock %}

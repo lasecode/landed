@@ -1,0 +1,24 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Reports</h1><p>Totals for any period, and a CSV your accountant can open in Excel.</p></div>
+  {% if request.user.is_owner %}<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn" href="{% url 'export_csv' %}?kind=payments&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">{% icon "download" %}Payments CSV</a>
+    <a class="btn" href="{% url 'export_csv' %}?kind=invoices&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">{% icon "download" %}Invoices CSV</a></div>{% endif %}
+</div>
+<form class="toolbar" method="get">
+  <div class="tabs">{% for label, s, e in presets %}<a class="tab{% if s == start and e == end %} on{% endif %}" href="?start={{ s|date:'Y-m-d' }}&end={{ e|date:'Y-m-d' }}">{{ label }}</a>{% endfor %}</div>
+  <div style="display:flex;gap:8px;align-items:center"><input class="input" type="date" name="start" value="{{ start|date:'Y-m-d' }}" style="width:150px" aria-label="From">
+    <span class="muted">to</span><input class="input" type="date" name="end" value="{{ end|date:'Y-m-d' }}" style="width:150px" aria-label="To"><button class="btn sm">Show</button></div>
+</form>
+<div class="stats">
+  <div class="stat"><small>Received</small><strong>{{ received|naira }}</strong><span>{{ n_pay }} payment{{ n_pay|pluralize }}{% if fees %} · {{ fees|naira }} fees{% endif %}</span></div>
+  <div class="stat"><small>Invoiced</small><strong>{{ invoiced|naira }}</strong><span>{{ n_inv }} invoice{{ n_inv|pluralize }} · {{ n_paid }} fully paid</span></div>
+  <div class="stat"><small>Still owed from this period</small><strong>{{ outstanding|naira }}</strong><span>{% if unmatched %}{{ unmatched }} unmatched payment{{ unmatched|pluralize }}{% else %}All payments matched{% endif %}</span></div>
+</div>
+<section class="panel"><div class="panel-head"><h2>Received per day</h2></div>
+  <div class="bars" style="grid-template-columns:repeat({{ daily|length }},minmax(0,1fr));gap:{% if show_labels %}10px{% else %}3px{% endif %}">
+    {% for d in daily %}<div class="bar" title="{{ d.d|date:'j M' }}: {{ d.amount|naira }}">{% if show_labels %}<em>{% if d.amount %}{{ d.amount|naira:"short" }}{% endif %}</em>{% endif %}
+      <i style="height:{{ d.pct }}%;{% if d.amount %}background:var(--brand){% endif %}"></i>{% if show_labels %}<span>{{ d.d|date:"j M" }}</span>{% endif %}</div>{% endfor %}
+  </div></section>
+{% if not request.user.is_owner %}<p class="muted small">CSV export is available to the business owner.</p>{% endif %}
+{% endblock %}

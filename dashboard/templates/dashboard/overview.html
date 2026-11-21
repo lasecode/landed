@@ -1,0 +1,47 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Hello, {{ request.user.name|first_word }}</h1>
+    <p>Every payment here was confirmed by the bank, not by a screenshot.</p></div>
+  <button class="btn primary" hx-get="{% url 'invoice_new' %}" hx-target="#drawer">{% icon "plus" %}New invoice</button>
+</div>
+{% if nav_unmatched %}
+<div class="notice red"><span class="ic">{% icon "alert" %}</span>
+  <p><b>{{ nav_unmatched }} payment{{ nav_unmatched|pluralize }} couldn't be matched automatically.</b> Tell us who {{ nav_unmatched|pluralize:"it's,they're" }} from and the invoice updates.</p>
+  <a class="btn sm" href="{% url 'unmatched' %}">Assign now</a></div>
+{% endif %}
+{% if overpaid %}
+<div class="notice"><span class="ic">{% icon "alert" %}</span>
+  <p><b>{{ overpaid }} customer{{ overpaid|pluralize }} paid more than the invoice.</b> Choose whether to refund the extra or keep it as credit.</p>
+  <a class="btn sm" href="{% url 'invoices' %}?status=overpaid">Review</a></div>
+{% endif %}
+<div class="stats">
+  <div class="stat"><small>Received today</small><strong>{{ today|naira }}</strong><span>{{ today_n }} payment{{ today_n|pluralize }}</span></div>
+  <div class="stat"><small>This month</small><strong>{{ month|naira }}</strong><span>{{ week|naira }} this week</span></div>
+  <div class="stat"><small>Still owed to you</small><strong>{{ owed|naira }}</strong><span><a class="link" href="{% url 'invoices' %}?status=unpaid">{{ open_n }} open invoice{{ open_n|pluralize }}</a></span></div>
+</div>
+<div class="home-grid">
+  <section class="panel">
+    <div class="panel-head"><h2>Last 7 days</h2><a href="{% url 'reports' %}" class="link">Reports</a></div>
+    <div class="chart-total"><strong>{{ week_total|naira }}</strong><span class="muted small">received</span></div>
+    <div class="bars" style="grid-template-columns:repeat(7,1fr)">
+      {% for d in days %}<div class="bar{% if d.today %} today{% endif %}" title="{{ d.amount|naira }}">
+        <em>{% if d.amount %}{{ d.amount|naira:"short" }}{% endif %}</em><i style="height:{{ d.pct }}%"></i>
+        <span>{% if d.today %}Today{% else %}{{ d.date|date:"D" }}{% endif %}</span></div>{% endfor %}
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Latest payments</h2></div>
+    <div class="panel-body"><div class="list">
+      {% for p in recent %}
+      <button class="li" {% if p.invoice %}hx-get="{% url 'invoice_detail' p.invoice.pk %}" hx-target="#drawer"{% endif %}>
+        <span class="li-ic {% if p.status == 'unmatched' %}red{% endif %}">{% if p.status == 'unmatched' %}{% icon "alert" %}{% else %}{% icon "in" %}{% endif %}</span>
+        <span style="min-width:0"><span class="li-name">{{ p.customer.name|default:p.payer_name|default:"Unknown sender" }}</span>
+          <span class="li-sub" style="display:block">{% if p.invoice %}{{ p.invoice.ref }}{% elif p.status == 'unmatched' %}Needs assigning{% elif p.status == 'refunded' %}Sent back{% else %}Held as credit{% endif %} · {{ p.paid_at|date:"j M, H:i" }}</span></span>
+        <span class="li-amt">{{ p.amount|naira }}</span>
+      </button>
+      {% empty %}<div class="empty" style="padding:28px 0"><b>No payments yet</b>Create an invoice and payments appear here the moment they land.</div>{% endfor %}
+    </div></div>
+  </section>
+</div>
+{% endblock %}

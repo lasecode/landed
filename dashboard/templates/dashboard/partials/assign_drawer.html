@@ -1,0 +1,21 @@
+{% load landed %}
+<div class="scrim" data-close></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-label="Assign payment">
+  <div class="drawer-head"><div><h2>Assign {{ p.amount|naira }}</h2><div class="muted small" style="margin-top:2px">From {{ p.payer_name|default:"unknown sender" }} · {{ p.paid_at|date:"j M, H:i" }}</div></div>
+    <button class="x" data-close aria-label="Close">{% icon "x" %}</button></div>
+  <form class="drawer-body" id="assign-form" hx-post="{% url 'payment_assign' p.pk %}" hx-swap="none">
+    <div class="callout"><div class="small"><b>Why it's here:</b> {{ p.unmatched_reason }}. The money is confirmed; we just don't know which invoice it's for.</div></div>
+    <input type="hidden" name="mode" value="{{ mode }}">
+    <div class="seg">
+      <button type="button" class="{% if mode == 'invoice' %}on{% endif %}" hx-get="{% url 'payment_assign' p.pk %}?mode=invoice" hx-target="#drawer">An invoice</button>
+      <button type="button" class="{% if mode == 'customer' %}on{% endif %}" hx-get="{% url 'payment_assign' p.pk %}?mode=customer" hx-target="#drawer">A customer</button>
+    </div>
+    <label class="search" style="width:100%">{% icon "search" %}<input type="search" name="q" placeholder="Search" hx-get="{% url 'payment_assign' p.pk %}?mode={{ mode }}" hx-trigger="input changed delay:300ms" hx-target="#assign-options"></label>
+    <div id="assign-options">{% include "dashboard/partials/assign_options.html" %}</div>
+    {% if mode == "customer" %}<p class="muted small">The money goes to their oldest unpaid invoices first. Anything left becomes credit.</p>{% endif %}
+  </form>
+  <div class="drawer-foot">
+    {% if request.user.is_owner %}<button class="btn ghost" style="margin-right:auto" hx-post="{% url 'payment_refund' p.pk %}" hx-swap="none" hx-confirm="Only do this after you've sent the money back from your bank app. Continue?">I sent it back</button>{% endif %}
+    <button class="btn" data-close>Cancel</button><button class="btn primary" form="assign-form">Assign</button>
+  </div>
+</aside>

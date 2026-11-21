@@ -1,0 +1,26 @@
+{% load landed %}
+<div class="scrim" data-close></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-label="New invoice">
+  <div class="drawer-head"><div><h2>New invoice</h2><div class="muted small" style="margin-top:2px">Your customer gets a link to pay by bank transfer.</div></div>
+    <button class="x" data-close aria-label="Close">{% icon "x" %}</button></div>
+  <form class="drawer-body form" id="inv-form" hx-post="{% url 'invoice_new' %}" hx-target="#drawer">
+    {% if errors %}<div class="error">{{ errors|join:" " }}</div>{% endif %}
+    <div class="field">
+      <label for="cust">Customer</label>
+      <input id="cust" name="customer_name" list="customer-list" autocomplete="off" placeholder="Start typing a name"
+             value="{% if customer %}{{ customer.name }}{% else %}{{ post.customer_name }}{% endif %}" {% if not customer %}autofocus{% endif %}>
+      <datalist id="customer-list">{% for c in customers %}<option value="{{ c.name }}">{% endfor %}</datalist>
+      {% if customer %}<input type="hidden" name="customer_id" value="{{ customer.pk }}">
+        {% if customer.credit_balance %}<span class="hint">{{ customer.name }} has {{ customer.credit_balance|naira }} credit. It will be used first.</span>{% endif %}{% endif %}
+    </div>
+    {% if not customer %}<div class="field"><label for="ph">Customer's WhatsApp number <span class="muted">(optional)</span></label>
+      <input id="ph" name="customer_phone" type="tel" inputmode="tel" placeholder="0803 123 4567" value="{{ post.customer_phone }}">
+      <span class="hint">Leave empty for existing customers. We'll use the number we have.</span></div>{% endif %}
+    <div class="field"><label for="amt">Amount</label><div class="money-input"><span>₦</span>
+      <input id="amt" name="amount" inputmode="decimal" placeholder="45,000" value="{{ post.amount }}" required></div></div>
+    <div class="field"><label for="desc">What's it for?</label><input id="desc" name="description" maxlength="300" placeholder="3 bags of rice" value="{{ post.description }}"></div>
+    <div class="field"><label for="due">Due date <span class="muted">(optional)</span></label><input id="due" name="due_date" type="date" value="{{ post.due_date }}"></div>
+    <label class="check"><input type="checkbox" name="send" checked> <span>Send it to the customer on WhatsApp (if we have their number)</span></label>
+  </form>
+  <div class="drawer-foot"><button class="btn" data-close>Cancel</button><button class="btn primary" form="inv-form">Create invoice</button></div>
+</aside>

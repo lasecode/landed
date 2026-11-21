@@ -1,0 +1,56 @@
+{% load landed %}
+<div class="scrim" data-close></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-label="{{ inv.ref }}">
+  <div class="drawer-head"><div><h2 style="display:flex;gap:10px;align-items:center">{{ inv.ref }} <span class="badge b-{{ inv.status }}">{% status_label inv.status %}</span></h2>
+    <div class="muted small" style="margin-top:2px">{{ inv.customer.name|default:"No customer" }} · created {{ inv.created_at|date:"j M Y" }}{% if inv.due_date and inv.is_open %} · due {{ inv.due_date|date:"j M" }}{% endif %}</div></div>
+    <button class="x" data-close aria-label="Close">{% icon "x" %}</button></div>
+  <div class="drawer-body">
+    <div><div class="big-amt">{{ inv.amount|naira }}</div><div class="muted">{{ inv.description|default:"No description" }}</div>
+      <div class="progress" style="margin-top:14px"><i style="width:{{ inv.percent_paid }}%"></i></div>
+      <div class="muted small" style="margin-top:6px">{{ inv.amount_paid|naira }} paid · {{ inv.balance|naira }} left</div></div>
+
+    {% if inv.excess_status == "pending" %}
+    <div class="callout"><div><b>{{ inv.customer.name|default:"The customer" }} paid {{ inv.excess_amount|naira }} more than the invoice.</b>
+      <div class="small" style="margin-top:2px">Refund it from your bank app, or keep it as credit for their next order.</div></div>
+      <div class="btns"><button class="btn sm" hx-post="{% url 'invoice_action' inv.pk 'credit' %}" hx-target="#drawer">Keep as credit</button>
+        <button class="btn sm" hx-post="{% url 'invoice_action' inv.pk 'refund' %}" hx-target="#drawer">I've refunded it</button></div></div>
+    {% endif %}
+
+    {% if inv.is_open %}
+    <div><div class="section-title">How the customer pays</div>
+      <div class="copy-row"><span style="flex:1">{{ pay_url }}</span><button class="btn sm" data-copy="{{ pay_url }}">{% icon "copy" %}</button></div>
+      <div class="muted small" style="margin-top:6px">They open the link, tap Pay, and get an account number for this payment. It confirms itself the moment money lands.</div>
+      {% if dva %}<div class="acct-box" style="margin-top:10px">{% icon "bank" %}<div style="flex:1"><div class="num">{{ dva.account_number }}</div>
+        <div class="muted small">{{ dva.bank_name }} · {{ inv.customer.first_name }}'s permanent account</div></div><button class="btn sm" data-copy="{{ dva.account_number }}">{% icon "copy" %}Copy</button></div>{% endif %}
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <a class="btn sm" target="_blank" rel="noreferrer" href="https://wa.me/{{ inv.customer.phone }}?text={{ 'Hello, here is your invoice '|urlencode }}{{ inv.ref|urlencode }}{{ ' from '|urlencode }}{{ inv.business.name|urlencode }}{{ ': '|urlencode }}{{ pay_url|urlencode }}">{% icon "chat" %}Share on WhatsApp</a>
+      </div></div>
+    {% endif %}
+
+    {% if test_mode and inv.is_open %}
+    <form class="callout blue" hx-post="{% url 'invoice_action' inv.pk 'simulate' %}" hx-target="#drawer">
+      <div><b>Test a payment</b><div class="small">Pretend the customer paid by transfer. Try less or more than the balance too.</div></div>
+      <div style="display:flex;gap:8px"><div class="money-input" style="flex:1"><span>₦</span>
+        <input class="input" style="padding-left:28px" name="amount" inputmode="decimal" placeholder="{{ inv.balance|naira|cut:'₦' }}"></div>
+        <button class="btn primary sm" style="height:40px">Send transfer</button></div>
+    </form>
+    {% endif %}
+
+    <div><div class="section-title">History</div><div class="timeline">
+      <div class="tl"><span class="dot grey"></span><span>Invoice created</span><span class="muted small">{{ inv.created_at|date:"j M, H:i" }}</span></div>
+      {% for e in ledger %}{% if e.type != "unmatched" %}
+      <div class="tl"><span class="dot {% if e.type == 'overpayment' %}amber{% elif e.type == 'refund' %}grey{% elif e.type == 'payment' %}{% else %}blue{% endif %}"></span>
+        <span>{{ e.get_type_display }}{% if e.payment.payer_name and e.type == "payment" %} <span class="muted">from {{ e.payment.payer_name }}</span>{% endif %}</span>
+        <span class="num" style="text-align:right">{{ e.amount|naira }}<span class="muted small" style="display:block">{{ e.created_at|date:"j M, H:i" }}</span></span></div>
+      {% endif %}{% endfor %}
+      {% if inv.status == "paid" %}<div class="tl"><span class="dot"></span><b>Fully paid</b><span class="muted small">{{ inv.paid_at|date:"j M, H:i" }}</span></div>{% endif %}
+      {% if inv.status == "cancelled" %}<div class="tl"><span class="dot red"></span><span>Cancelled</span><span></span></div>{% endif %}
+    </div></div>
+    {% if inv.reminders_sent %}<p class="muted small">{{ inv.reminders_sent }} WhatsApp reminder{{ inv.reminders_sent|pluralize }} sent.</p>{% endif %}
+  </div>
+  <div class="drawer-foot">
+    {% if inv.status == "unpaid" %}<button class="btn danger" hx-post="{% url 'invoice_action' inv.pk 'cancel' %}" hx-target="#drawer" hx-confirm="Cancel {{ inv.ref }}? The payment link will stop working.">Cancel invoice</button>{% endif %}
+    <a class="btn" href="{{ pay_url }}" target="_blank" rel="noreferrer">{% icon "out" %}{% if inv.status == "paid" %}Receipt{% else %}Customer view{% endif %}</a>
+    {% if inv.is_open and inv.customer.phone %}<button class="btn primary" hx-post="{% url 'invoice_action' inv.pk 'resend' %}" hx-target="#drawer">{% icon "send" %}Resend on WhatsApp</button>{% endif %}
+  </div>
+</aside>

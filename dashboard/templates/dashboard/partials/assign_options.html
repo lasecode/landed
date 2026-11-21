@@ -1,0 +1,7 @@
+{% load landed %}<div class="list">
+{% for o in opts %}<label class="li" style="grid-template-columns:20px 1fr auto;cursor:pointer">
+  <input type="radio" name="target" value="{{ o.pk }}" required style="accent-color:var(--brand)">
+  {% if mode == "invoice" %}<span><span class="li-name mono">{{ o.ref }}</span> <span class="li-sub">{{ o.customer.name }}</span><span class="li-sub" style="display:block">{{ o.description }}</span></span>
+    <span class="li-amt">{{ o.balance|naira }}<small>{% if o.balance == p.amount %}exact match{% else %}left to pay{% endif %}</small></span>
+  {% else %}<span class="li-name">{{ o.name }}</span><span></span>{% endif %}
+</label>{% empty %}<p class="muted small">Nothing found.</p>{% endfor %}</div>

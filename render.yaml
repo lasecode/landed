@@ -1,0 +1,54 @@
+# Render Blueprint for the Django version of Landed.
+# Starter setup: one web service + Postgres. Jobs run inline and the scheduler runs inside the web
+# process (EMBED_SCHEDULER). When volume grows, add Redis (REDIS_URL) plus the worker below.
+services:
+  - type: web
+    name: landed-web
+    runtime: python
+    plan: starter            # free sleeps after 15 min and would miss Paystack webhooks; fine for demos only
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi --workers 1 --threads 4 --timeout 60
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DATABASE_URL
+        fromDatabase: { name: landed-pg, property: connectionString }
+      - key: SECRET_KEY
+        generateValue: true
+      - key: APP_ENV
+        value: staging        # set to production with PAYMENT_PROVIDER=paystack and a live key
+      - key: PAYMENT_PROVIDER
+        value: mock           # test mode until Landed's Paystack account is approved
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_DVA_BANK
+        value: test-bank      # wema-bank or titan-paystack with live keys
+      - key: LANDED_FEE_PERCENT
+        value: "1.0"
+      - key: EMBED_SCHEDULER
+        value: "true"
+      - key: WHATSAPP_DRY_RUN
+        value: "true"
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true
+  # Uncomment with Redis when you need a separate worker:
+  # - type: worker
+  #   name: landed-worker
+  #   runtime: python
+  #   plan: starter
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: celery -A config worker -B -l info
+  #   envVars: (same as landed-web, plus REDIS_URL, and EMBED_SCHEDULER=false on both)
+
+databases:
+  - name: landed-pg
+    plan: basic-256mb
+    databaseName: landed
+    user: landed
