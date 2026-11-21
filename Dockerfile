@@ -4,7 +4,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN SECRET_KEY=build-only python manage.py collectstatic --noinput \
+RUN DEBUG=false APP_ENV=staging SECRET_KEY=build-only python manage.py collectstatic --noinput \
  && useradd -m app && chown -R app /app
 USER app
 EXPOSE 8000
