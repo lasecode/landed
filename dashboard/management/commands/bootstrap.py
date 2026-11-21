@@ -22,3 +22,8 @@ class Command(BaseCommand):
         demo_pw = os.getenv("DEMO_PASSWORD", "")
         if demo_pw and settings.PAYMENT_PROVIDER == "mock" and not User.objects.filter(phone="2347000000001").exists():
             call_command("seed_demo", phone="07000000001", password=demo_pw)
+        if os.getenv("PAYSTACK_SELFTEST") == "1" and settings.PAYSTACK_SECRET_KEY:
+            try:
+                call_command("paystack_check")
+            except Exception as e:  # never block startup
+                self.stdout.write(f"PAYSTACK_CHECK FAIL crashed: {type(e).__name__}")
