@@ -1,29 +1,27 @@
-# Render Blueprint for the Django version of Landed.
-# Starter setup: one web service + Postgres. Jobs run inline and the scheduler runs inside the web
-# process (EMBED_SCHEDULER). When volume grows, add Redis (REDIS_URL) plus the worker below.
+# Render Blueprint. The names "landed" and "landed-db" match the existing Render resources,
+# so a sync updates the live site in place.
+# Free plan: fine for demos. For real money switch the web service to Starter (it must not sleep,
+# or Paystack webhooks can time out) and the database to a paid plan (free ones expire).
 services:
   - type: web
-    name: landed-web
-    runtime: python
-    plan: starter            # free sleeps after 15 min and would miss Paystack webhooks; fine for demos only
-    buildCommand: ./build.sh
-    startCommand: gunicorn config.wsgi --workers 1 --threads 4 --timeout 60
+    name: landed
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /healthz
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.7
       - key: DATABASE_URL
-        fromDatabase: { name: landed-pg, property: connectionString }
+        fromDatabase: { name: landed-db, property: connectionString }
       - key: SECRET_KEY
         generateValue: true
       - key: APP_ENV
-        value: staging        # set to production with PAYMENT_PROVIDER=paystack and a live key
+        value: staging          # production once PAYMENT_PROVIDER=paystack with a live key
       - key: PAYMENT_PROVIDER
-        value: mock           # test mode until Landed's Paystack account is approved
+        value: mock             # test mode until Landed's Paystack account is approved
       - key: PAYSTACK_SECRET_KEY
         sync: false
       - key: PAYSTACK_DVA_BANK
-        value: test-bank      # wema-bank or titan-paystack with live keys
+        value: test-bank        # wema-bank or titan-paystack with a live key
       - key: LANDED_FEE_PERCENT
         value: "1.0"
       - key: EMBED_SCHEDULER
@@ -38,17 +36,15 @@ services:
         sync: false
       - key: WHATSAPP_VERIFY_TOKEN
         generateValue: true
-  # Uncomment with Redis when you need a separate worker:
-  # - type: worker
-  #   name: landed-worker
-  #   runtime: python
-  #   plan: starter
-  #   buildCommand: pip install -r requirements.txt
-  #   startCommand: celery -A config worker -B -l info
-  #   envVars: (same as landed-web, plus REDIS_URL, and EMBED_SCHEDULER=false on both)
+      - key: ADMIN_PHONE
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false
 
 databases:
-  - name: landed-pg
-    plan: basic-256mb
+  - name: landed-db
+    plan: free
     databaseName: landed
     user: landed

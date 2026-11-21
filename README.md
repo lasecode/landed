@@ -83,7 +83,7 @@ pytest                            # the test suite
 
 ## Deploy (Render)
 
-`render.yaml` creates a Python web service and a Postgres database. `build.sh` installs dependencies, collects static files and runs migrations. With one web instance and no Redis, background jobs run inline and the scheduler runs inside the web process (`EMBED_SCHEDULER=true`). When volume grows, add Redis, set `REDIS_URL`, run `celery -A config worker -B` as a worker, and set `EMBED_SCHEDULER=false`.
+`render.yaml` describes a Docker web service and a Postgres database. On every start the container runs migrations, then `bootstrap` (creates the admin login from `ADMIN_PHONE`/`ADMIN_PASSWORD` and, in test mode, the demo seller from `DEMO_PASSWORD`), then Gunicorn. With one web instance and no Redis, background jobs run inline and the scheduler runs inside the web process (`EMBED_SCHEDULER=true`). When volume grows, add Redis, set `REDIS_URL`, run `celery -A config worker -B` as a worker, and set `EMBED_SCHEDULER=false`.
 
 Use a paid web plan for real money. A free instance sleeps, and the first webhook after a sleep can time out (Paystack retries, and reconciliation catches it, but it's slower).
 
