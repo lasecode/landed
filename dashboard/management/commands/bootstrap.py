@@ -37,3 +37,8 @@ class Command(BaseCommand):
                 call_command("purge_test_data")
             except Exception as e:  # never block startup
                 self.stdout.write(f"PURGE crashed: {type(e).__name__}: {e}")
+        if os.getenv("FLOW_TEST"):
+            try:
+                call_command("flow_test")
+            except Exception as e:  # never block startup
+                self.stdout.write(f"FLOW crashed: {type(e).__name__}: {e}")
