@@ -27,3 +27,8 @@ class Command(BaseCommand):
                 call_command("paystack_check")
             except Exception as e:  # never block startup
                 self.stdout.write(f"PAYSTACK_CHECK FAIL crashed: {type(e).__name__}")
+        if os.getenv("PAYSTACK_TEST_ACCOUNTS") and settings.PAYSTACK_SECRET_KEY:
+            try:
+                call_command("paystack_subaccount_test")
+            except Exception as e:  # never block startup
+                self.stdout.write(f"SUBACCOUNT_TEST crashed: {type(e).__name__}")
