@@ -47,6 +47,13 @@ class Command(BaseCommand):
         sub = run("create subaccount", lambda: p.create_subaccount(
             business_name="Landed Check Seller", bank_code="058", account_number="0000000000",
             fee_percent=settings.LANDED_FEE_PERCENT, contact_phone="2347000000099", contact_email=""))
+        def existing():
+            subs = p._call("GET", "/subaccount", params={"perPage": 20})["data"]
+            return [(x.get("subaccount_code"), x.get("business_name"), (x.get("settlement_bank") or ""), x.get("active")) for x in subs]
+        subs = run("list existing subaccounts", existing) or []
+        if not sub and subs:
+            sub = subs[0][0]
+            self.line("INFO", "using existing subaccount", f"{subs[0][0]} ({subs[0][1]})")
         stamp = int(time.time())
         email = f"check{stamp}@example.com"
 
