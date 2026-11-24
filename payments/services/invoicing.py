@@ -45,8 +45,11 @@ def set_payout_account(business: Business, *, bank_code: str, account_number: st
     if bank_code not in banks:
         raise InvoiceError("Choose your bank from the list")
     try:
-        account_name = provider.resolve_account(account_number, bank_code)
-        if business.subaccount_code:
+        found = None if business.subaccount_code else provider.find_subaccount(bank_code, banks[bank_code], account_number)
+        account_name = (found[1] if found and found[1] else "") or provider.resolve_account(account_number, bank_code)
+        if found:
+            business.subaccount_code = found[0]  # same bank account already has a sub-account: reuse it
+        elif business.subaccount_code:
             provider.update_subaccount(business.subaccount_code, bank_code=bank_code, account_number=account_number)
         else:
             business.subaccount_code = provider.create_subaccount(
