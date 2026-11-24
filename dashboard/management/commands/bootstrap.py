@@ -32,3 +32,8 @@ class Command(BaseCommand):
                 call_command("paystack_subaccount_test")
             except Exception as e:  # never block startup
                 self.stdout.write(f"SUBACCOUNT_TEST crashed: {type(e).__name__}")
+        if os.getenv("PURGE_BEFORE"):
+            try:
+                call_command("purge_test_data")
+            except Exception as e:  # never block startup
+                self.stdout.write(f"PURGE crashed: {type(e).__name__}: {e}")
