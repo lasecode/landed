@@ -46,7 +46,9 @@ def set_payout_account(business: Business, *, bank_code: str, account_number: st
         raise InvoiceError("Choose your bank from the list")
     try:
         found = None if business.subaccount_code else provider.find_subaccount(bank_code, banks[bank_code], account_number)
-        account_name = (found[1] if found and found[1] else "") or provider.resolve_account(account_number, bank_code)
+        # a reused sub-account was already checked by Paystack when it was made, so don't spend another lookup
+        account_name = ((found[1] or f"Account ending {account_number[-4:]}") if found
+                        else provider.resolve_account(account_number, bank_code))
         if found:
             business.subaccount_code = found[0]  # same bank account already has a sub-account: reuse it
         elif business.subaccount_code:
