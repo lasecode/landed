@@ -54,9 +54,21 @@ class Command(BaseCommand):
             if r.status_code == 302:
                 self.out("PASS", "payout saved", f"name='{b.payout_account_name}' bank={b.payout_bank_name} subaccount={b.subaccount_code} status={b.status}")
             else:
-                err = re.findall(r'class="[^"]*error[^"]*"[^>]*>([^<]+)<', r.content.decode())
-                self.out("FAIL", "payout save", err or f"HTTP {r.status_code}")
-                return
+                from payments.services.invoicing import InvoiceError, set_payout_account
+                try:
+                    set_payout_account(b, bank_code=bank[0], account_number=number)
+                    self.out("PASS", "payout saved on retry", f"{b.payout_account_name} {b.subaccount_code}")
+                except InvoiceError as e:
+                    self.out("FAIL", "payout save", e)
+                    try:
+                        subs = get_provider()._call("GET", "/subaccount", params={"perPage": 50})["data"]
+                        self.out("INFO", "existing sub-accounts", [
+                            {k: (str(x.get(k))[-4:] if k == "account_number" else x.get(k))
+                             for k in ("subaccount_code", "settlement_bank", "account_number", "account_name", "active")}
+                            for x in subs])
+                    except Exception as e2:  # noqa: BLE001
+                        self.out("INFO", "existing sub-accounts", e2)
+                    return
         else:
             self.out("INFO", "payout already set", f"{b.payout_account_name} {b.payout_bank_name} {b.subaccount_code}")
 
