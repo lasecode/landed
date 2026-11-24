@@ -91,6 +91,17 @@ class PaystackProvider(Provider):
         data = self._call("POST", "/subaccount", json=payload)["data"]
         return data["subaccount_code"]
 
+    def find_subaccount(self, bank_code, bank_name, account_number):
+        for page in range(1, 6):
+            body = self._call("GET", "/subaccount", params={"perPage": 100, "page": page})
+            for x in body.get("data") or []:
+                bank = str(x.get("settlement_bank") or "")
+                if x.get("account_number") == account_number and bank in (bank_code, bank_name) and x.get("active", True):
+                    return x["subaccount_code"], x.get("account_name") or ""
+            if page >= int((body.get("meta") or {}).get("pageCount") or 1):
+                break
+        return None
+
     def update_subaccount(self, code, *, bank_code=None, account_number=None, fee_percent=None, business_name=None) -> None:
         payload = {}
         if bank_code:

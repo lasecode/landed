@@ -74,6 +74,10 @@ class Provider(abc.ABC):
                           fee_percent: float, contact_phone: str, contact_email: str) -> str:
         """Create the seller's sub-account and return its code."""
 
+    def find_subaccount(self, bank_code: str, bank_name: str, account_number: str) -> tuple[str, str] | None:
+        """An existing sub-account for this bank account, as (code, account name). Avoids duplicates."""
+        return None
+
     @abc.abstractmethod
     def update_subaccount(self, code: str, *, bank_code: str | None = None, account_number: str | None = None,
                           fee_percent: float | None = None, business_name: str | None = None) -> None: ...
