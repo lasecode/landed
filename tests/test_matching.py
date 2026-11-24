@@ -143,3 +143,21 @@ def test_cannot_pay_seller_without_payout(db):
     inv = create_invoice(b, amount=500_000, customer=None)
     with pytest.raises(InvoiceError):
         pay_account(inv)
+
+
+def test_payout_reuses_existing_subaccount_without_lookup(db, monkeypatch):
+    from accounts.models import Business
+    from payments.providers.mock import MockProvider
+    from payments.services import invoicing
+
+    calls = {"resolve": 0, "create": 0}
+    p = MockProvider()
+    monkeypatch.setattr(p, "find_subaccount", lambda code, name, num: ("ACCT_existing", ""))
+    monkeypatch.setattr(p, "resolve_account", lambda *a: calls.__setitem__("resolve", calls["resolve"] + 1) or "X")
+    monkeypatch.setattr(p, "create_subaccount", lambda **k: calls.__setitem__("create", calls["create"] + 1) or "ACCT_new")
+    monkeypatch.setattr(invoicing, "get_provider", lambda: p)
+    b = Business.objects.create(name="Reuse", phone="2348000000000")
+    bank = p.list_banks()[0].code
+    invoicing.set_payout_account(b, bank_code=bank, account_number="1234567890")
+    assert b.subaccount_code == "ACCT_existing" and calls == {"resolve": 0, "create": 0}
+    assert b.payout_account_name == "Account ending 7890" and b.status == "active"

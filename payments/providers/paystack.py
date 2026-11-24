@@ -96,7 +96,7 @@ class PaystackProvider(Provider):
             body = self._call("GET", "/subaccount", params={"perPage": 100, "page": page})
             for x in body.get("data") or []:
                 bank = str(x.get("settlement_bank") or "")
-                if x.get("account_number") == account_number and bank in (bank_code, bank_name) and x.get("active", True):
+                if str(x.get("account_number")) == account_number and bank in (bank_code, bank_name) and x.get("active", True):
                     return x["subaccount_code"], x.get("account_name") or ""
             if page >= int((body.get("meta") or {}).get("pageCount") or 1):
                 break
