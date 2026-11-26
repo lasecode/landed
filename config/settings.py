@@ -142,6 +142,7 @@ PAYSTACK_DVA_BANK = os.getenv("PAYSTACK_DVA_BANK", "wema-bank")  # test-bank in 
 LANDED_FEE_PERCENT = float(os.getenv("LANDED_FEE_PERCENT", "1.0"))
 # Who pays Paystack's fee: "subaccount" (seller) or "account" (Landed)
 PAYSTACK_FEE_BEARER = os.getenv("PAYSTACK_FEE_BEARER", "subaccount")
+PAYOUT_BUSINESS_DAYS = int(os.getenv("PAYOUT_BUSINESS_DAYS", "1"))  # when we tell sellers to expect their money
 PAY_LINK_HOURS = int(os.getenv("PAY_LINK_HOURS", "8"))  # Pay with Transfer accounts: 15 min to 8 h
 INVOICE_DEFAULT_DUE_DAYS = int(os.getenv("INVOICE_DEFAULT_DUE_DAYS", "7"))
 

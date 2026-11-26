@@ -13,6 +13,7 @@
       <a href="{% url 'invoices' %}" class="{% if u == 'invoices' %}active{% endif %}">{% icon "invoice" %}Invoices</a>
       <a href="{% url 'customers' %}" class="{% if u == 'customers' %}active{% endif %}">{% icon "users" %}Customers</a>
       <a href="{% url 'unmatched' %}" class="{% if u == 'unmatched' %}active{% endif %}">{% icon "alert" %}Unmatched{% if nav_unmatched %}<span class="count">{{ nav_unmatched }}</span>{% endif %}</a>
+      <a href="{% url 'payouts' %}" class="{% if u == 'payouts' %}active{% endif %}">{% icon "bank" %}Payouts</a>
       <a href="{% url 'reports' %}" class="{% if u == 'reports' %}active{% endif %}">{% icon "chart" %}Reports</a>
       {% if request.user.is_owner %}<a href="{% url 'settings' %}" class="{% if u == 'settings' or u == 'payout_setup' %}active{% endif %}">{% icon "settings" %}Settings</a>{% endif %}
     </nav>

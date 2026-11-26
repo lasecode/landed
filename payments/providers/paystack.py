@@ -102,6 +102,22 @@ class PaystackProvider(Provider):
                 break
         return None
 
+    def list_settlements(self, subaccount_code, since):
+        out = []
+        body = self._call("GET", "/settlement", params={"subaccount": subaccount_code, "perPage": 50,
+                                                        "from": since.astimezone(timezone.utc).strftime("%Y-%m-%d")})
+        for st in body.get("data") or []:
+            refs = []
+            try:
+                txs = self._call("GET", f"/settlement/{st['id']}/transactions", params={"perPage": 100}).get("data") or []
+                refs = [t.get("reference") for t in txs if t.get("reference")]
+            except ProviderError:
+                pass
+            out.append({"id": str(st.get("id")), "status": st.get("status") or "", "amount": int(st.get("total_amount") or 0),
+                        "date": _dt(st.get("settlement_date") or st.get("settled_at") or st.get("updatedAt")),
+                        "references": refs})
+        return out
+
     def update_subaccount(self, code, *, bank_code=None, account_number=None, fee_percent=None, business_name=None) -> None:
         payload = {}
         if bank_code:

@@ -32,6 +32,7 @@ urlpatterns = [
     path("app/customers/<int:pk>/", v.customer_detail, name="customer_detail"),
     path("app/customers/<int:pk>/account/", v.customer_account, name="customer_account"),
     path("app/unmatched/", v.unmatched, name="unmatched"),
+    path("app/payouts/", v.payouts, name="payouts"),
     path("app/payments/<int:pk>/assign/", v.payment_assign, name="payment_assign"),
     path("app/payments/<int:pk>/refund/", v.payment_refund, name="payment_refund"),
     path("app/reports/", v.reports, name="reports"),

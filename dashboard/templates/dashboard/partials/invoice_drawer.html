@@ -40,7 +40,8 @@
       <div class="tl"><span class="dot grey"></span><span>Invoice created</span><span class="muted small">{{ inv.created_at|date:"j M, H:i" }}</span></div>
       {% for e in ledger %}{% if e.type != "unmatched" %}
       <div class="tl"><span class="dot {% if e.type == 'overpayment' %}amber{% elif e.type == 'refund' %}grey{% elif e.type == 'payment' %}{% else %}blue{% endif %}"></span>
-        <span>{{ e.get_type_display }}{% if e.payment.payer_name and e.type == "payment" %} <span class="muted">from {{ e.payment.payer_name }}</span>{% endif %}</span>
+        <span>{{ e.get_type_display }}{% if e.payment.payer_name and e.type == "payment" %} <span class="muted">from {{ e.payment.payer_name }}</span>{% endif %}
+          {% if e.type == "payment" and e.payment.payout_amount %}{% with p=e.payment %}<span class="small" style="display:block">{% include "dashboard/partials/payout_line.html" %}</span>{% endwith %}{% endif %}</span>
         <span class="num" style="text-align:right">{{ e.amount|naira }}<span class="muted small" style="display:block">{{ e.created_at|date:"j M, H:i" }}</span></span></div>
       {% endif %}{% endfor %}
       {% if inv.status == "paid" %}<div class="tl"><span class="dot"></span><b>Fully paid</b><span class="muted small">{{ inv.paid_at|date:"j M, H:i" }}</span></div>{% endif %}

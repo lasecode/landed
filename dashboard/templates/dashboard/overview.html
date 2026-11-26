@@ -18,6 +18,7 @@
 <div class="stats">
   <div class="stat"><small>Received today</small><strong>{{ today|naira }}</strong><span>{{ today_n }} payment{{ today_n|pluralize }}</span></div>
   <div class="stat"><small>This month</small><strong>{{ month|naira }}</strong><span>{{ week|naira }} this week</span></div>
+  <a class="stat" href="{% url 'payouts' %}" style="text-decoration:none;color:inherit"><small>On its way to your bank</small><strong>{{ payout.on_way|naira }}</strong><span>{% if payout.on_way %}{% if payout.late %}Taking longer than usual{% else %}Expected by {{ payout.expected|date:"D j M" }}{% endif %}{% else %}All paid out ✓{% endif %}</span></a>
   <div class="stat"><small>Still owed to you</small><strong>{{ owed|naira }}</strong><span><a class="link" href="{% url 'invoices' %}?status=unpaid">{{ open_n }} open invoice{{ open_n|pluralize }}</a></span></div>
 </div>
 <div class="home-grid">

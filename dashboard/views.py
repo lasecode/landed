@@ -118,7 +118,28 @@ def overview(request):
         "overpaid": Invoice.objects.filter(business=b, excess_status=Invoice.Excess.PENDING).count(),
         "recent": Payment.objects.filter(business=b).select_related("invoice", "customer")[:8],
     }
+    from payments.services.payouts import summary
+
+    ctx["payout"] = summary(b)
     return render(request, "dashboard/overview.html", ctx)
+
+
+# ---------- payouts (where's my money?) ----------
+
+@seller_required
+def payouts(request):
+    from payments.services.payouts import summary, sync_business
+
+    b = request.user.business
+    if request.method == "POST":
+        try:
+            n = sync_business(b)
+            messages.success(request, "Checked with Paystack. " + (f"{n} update{'s' if n != 1 else ''}." if n else "No change yet."))
+        except ProviderError as e:
+            messages.error(request, f"Couldn't reach Paystack: {e}")
+        return redirect("payouts")
+    rows = Payment.objects.filter(business=b, status=Payment.Status.MATCHED).select_related("invoice", "customer")[:200]
+    return render(request, "dashboard/payouts.html", {"rows": rows, "s": summary(b)})
 
 
 # ---------- payout setup ----------

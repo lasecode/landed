@@ -25,4 +25,5 @@ class DashboardConfig(AppConfig):
         s.add_job(tasks.expire_invoices, "interval", minutes=15, id="expire")
         s.add_job(tasks.reconcile, "interval", hours=3, id="reconcile")
         s.add_job(tasks.send_reminders, "interval", hours=1, id="reminders")
+        s.add_job(tasks.sync_payouts, "interval", minutes=30, id="payouts")
         s.start()

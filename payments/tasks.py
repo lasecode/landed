@@ -94,3 +94,10 @@ def send_reminders(now=None) -> int:
         Invoice.objects.filter(pk=inv.pk).update(reminders_sent=inv.reminders_sent + 1)
         sent += 1
     return sent
+
+
+@shared_task
+def sync_payouts() -> int:
+    from .services.payouts import sync_all
+
+    return sync_all()

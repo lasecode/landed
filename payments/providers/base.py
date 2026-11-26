@@ -78,6 +78,10 @@ class Provider(abc.ABC):
         """An existing sub-account for this bank account, as (code, account name). Avoids duplicates."""
         return None
 
+    def list_settlements(self, subaccount_code: str, since: datetime) -> list[dict]:
+        """Payouts the provider made to this sub-account: [{id, status, date, amount, references}]."""
+        return []
+
     @abc.abstractmethod
     def update_subaccount(self, code: str, *, bank_code: str | None = None, account_number: str | None = None,
                           fee_percent: float | None = None, business_name: str | None = None) -> None: ...
