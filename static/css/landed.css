@@ -155,6 +155,10 @@ td b{font-weight:600}
 .b-part_paid{background:var(--amber-soft);color:var(--amber)}
 .b-unpaid{background:var(--blue-soft);color:var(--blue)}
 .b-expired,.b-cancelled,.b-refunded{background:var(--grey-soft);color:var(--grey)}
+.b-waiting,.b-processing{background:var(--blue-soft);color:var(--blue)}
+.b-sent{background:var(--brand-soft);color:var(--brand)}
+.b-late{background:var(--amber-soft);color:var(--amber)}
+.b-failed{background:var(--red-soft);color:var(--red)}
 .b-unmatched{background:var(--red-soft);color:var(--red)}
 
 /* forms */

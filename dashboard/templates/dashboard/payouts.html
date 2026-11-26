@@ -1,0 +1,27 @@
+{% extends "app.html" %}{% load landed %}{% block title %}Payouts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Payouts</h1>
+    <p>When a customer pays, Paystack confirms it instantly. Your share then goes to
+      {% if business.payout_account_name %}<b>{{ business.payout_account_name }}</b>, {{ business.payout_bank_name }}{% else %}your bank{% endif %},
+      usually by the next working day.</p></div>
+  <form method="post">{% csrf_token %}<button class="btn">{% icon "check" %}Check with Paystack now</button></form>
+</div>
+{% if s.late %}<div class="notice"><span class="ic">{% icon "alert" %}</span>
+  <p><b>Some money is taking longer than usual.</b> Your payments are safe and confirmed. A seller's first payout can take an extra day; we check with Paystack every 30 minutes and will message you on WhatsApp the moment it's sent.</p></div>{% endif %}
+{% if s.failed %}<div class="notice red"><span class="ic">{% icon "alert" %}</span>
+  <p><b>{{ s.failed }} payout{{ s.failed|pluralize }} failed.</b> This usually means the bank rejected it. Check your account in <a class="link" href="{% url 'payout_setup' %}">payout settings</a>; Landed support is following up with Paystack.</p></div>{% endif %}
+<div class="stats">
+  <div class="stat"><small>On its way to your bank</small><strong>{{ s.on_way|naira }}</strong><span>{% if s.on_way %}{{ s.on_way_n }} payment{{ s.on_way_n|pluralize }} · expected by {{ s.expected|date:"D j M" }}{% else %}Nothing waiting{% endif %}</span></div>
+  <div class="stat"><small>Sent to your bank this month</small><strong>{{ s.sent_month|naira }}</strong><span>after fees</span></div>
+</div>
+<div class="table-card"><div class="table-scroll"><table>
+  <thead><tr><th>Customer</th><th class="r">They paid</th><th class="r hide-sm">Fees</th><th class="r">You get</th><th>Status</th></tr></thead>
+  <tbody>{% for p in rows %}<tr {% if p.invoice %}class="click" hx-get="{% url 'invoice_detail' p.invoice.pk %}" hx-target="#drawer"{% endif %}>
+    <td><b>{{ p.customer.name|default:p.payer_name|default:"Customer" }}</b><span class="sub">{% if p.invoice %}{{ p.invoice.ref }} · {% endif %}{{ p.paid_at|date:"j M, H:i" }}</span></td>
+    <td class="r num">{{ p.amount|naira }}</td>
+    <td class="r num hide-sm muted">{{ p.fees|add:p.landed_fee|naira }}<span class="sub">Paystack {{ p.fees|naira }} · Landed {{ p.landed_fee|naira }}</span></td>
+    <td class="r num"><b>{{ p.payout_amount|naira }}</b></td>
+    <td>{% include "dashboard/partials/payout_line.html" %}</td></tr>{% endfor %}</tbody>
+</table>{% if not rows %}<div class="empty"><b>No payments yet</b>When customers pay, you'll see each payment's journey to your bank here.</div>{% endif %}</div></div>
+{% endblock %}

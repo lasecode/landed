@@ -163,8 +163,37 @@ class Payment(models.Model):
     paid_at = models.DateTimeField()
     created_at = models.DateTimeField(default=timezone.now)
 
+    # Payout tracking: the seller's share on its way from Paystack to their bank
+    class Payout(models.TextChoices):
+        WAITING = "waiting", "On its way"
+        PROCESSING = "processing", "Being sent"
+        SENT = "sent", "Sent to your bank"
+        FAILED = "failed", "Payout failed"
+
+    payout_amount = models.BigIntegerField(default=0, help_text="Seller's share after Paystack's and Landed's fees")
+    payout_status = models.CharField(max_length=12, choices=Payout.choices, default=Payout.WAITING, db_index=True)
+    payout_expected = models.DateField(null=True, blank=True)
+    payout_sent_at = models.DateTimeField(null=True, blank=True)
+    payout_reference = models.CharField(max_length=40, blank=True, help_text="Paystack settlement id")
+
     class Meta:
         ordering = ["-paid_at"]
+
+    def save(self, *args, **kwargs):
+        if self.business_id and not self.payout_amount and self.status != self.Status.REFUNDED:
+            from .services.payouts import estimate
+
+            estimate(self)
+        super().save(*args, **kwargs)
+
+    @property
+    def landed_fee(self) -> int:
+        return max(self.amount - self.fees - self.payout_amount, 0) if self.payout_amount else 0
+
+    @property
+    def payout_late(self) -> bool:
+        return (self.payout_status in (self.Payout.WAITING, self.Payout.PROCESSING) and self.payout_expected is not None
+                and timezone.localdate() > self.payout_expected)
 
     def __str__(self):
         return self.reference

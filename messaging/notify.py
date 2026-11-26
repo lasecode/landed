@@ -72,6 +72,11 @@ def payment_applied(invoice, amount: int, payer: str) -> None:
             state = f"Fully paid, with {naira(invoice.excess_amount)} extra. Choose refund or credit in Landed."
     else:
         state = f"{naira(invoice.balance)} still outstanding."
+    if b.payout_bank_name:
+        from payments.services.payouts import next_business_day
+
+        when = next_business_day(timezone.localdate(), settings.PAYOUT_BUSINESS_DAYS)
+        state += f" Your share goes to your {short_bank(b.payout_bank_name)} account by {when:%a %d %b}."
     queue(b, b.alert_number, "landed_seller_alert", [payer or "A customer", naira(amount), invoice.ref, state], invoice)
     c = invoice.customer
     if c and c.phone:
@@ -99,3 +104,16 @@ def account_assigned(customer, account) -> None:
     if customer.phone:
         queue(customer.business, customer.phone, "landed_account_assigned",
               [customer.first_name, customer.business.name, account.account_number, account.bank_name])
+
+
+def short_bank(name: str) -> str:
+    """'OPay Digital Services Limited (OPay)' -> 'OPay'."""
+    if "(" in name and name.rstrip().endswith(")"):
+        return name[name.rfind("(") + 1:-1].strip() or name
+    return name
+
+
+def payout_sent(business, amount: int, count: int) -> None:
+    what = "payment" if count == 1 else f"{count} payments"
+    queue(business, business.alert_number, "landed_payout_sent",
+          [naira(amount), what, short_bank(business.payout_bank_name or "bank"), dashboard_url("payouts")])

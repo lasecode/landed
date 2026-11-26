@@ -30,7 +30,8 @@ MENU = ("*Landed* 👋 Reply with a number:\n\n"
         "3. Unpaid invoices\n"
         "4. Check a customer\n"
         "5. Recent payments\n"
-        "6. Payments to assign\n\n"
+        "6. Payments to assign\n"
+        "7. Money on its way to my bank\n\n"
         "Reply *menu* or *0* any time to come back here.")
 BACK = "\n\n0. Main menu"
 
@@ -180,6 +181,24 @@ def handle(user, text: str) -> str:
                 return "Nothing to assign. Every payment is matched ✅" + BACK
             return (f"{n} payment{'s' if n != 1 else ''} couldn't be matched to an invoice. "
                     f"Assign {'them' if n != 1 else 'it'} here: {dashboard_url('unmatched')}" + BACK)
+        if c == 7:
+            from payments.services.payouts import summary
+
+            from .notify import dashboard_url, short_bank
+
+            sm = summary(b)
+            bank = short_bank(b.payout_bank_name) if b.payout_bank_name else "your bank"
+            if not sm["on_way"]:
+                msg = f"Nothing waiting. Everything has been sent to {bank} ✅"
+            elif sm["late"]:
+                msg = (f"*{naira(sm['on_way'])}* is on its way to {bank} but taking longer than usual. "
+                       "Your money is safe and confirmed; we'll message you the moment Paystack sends it.")
+            else:
+                msg = (f"*{naira(sm['on_way'])}* from {sm['on_way_n']} payment{'s' if sm['on_way_n'] != 1 else ''} "
+                       f"is on its way to {bank}, expected by {sm['expected']:%a %d %b}.")
+            if sm["sent_month"]:
+                msg += f"\nSent to {bank} this month: {naira(sm['sent_month'])}"
+            return msg + f"\nDetails: {dashboard_url('payouts')}" + BACK
         return "Please reply with a number from the menu.\n\n" + MENU
 
     # ---- new invoice: who -> amount -> what for -> (phone) -> confirm

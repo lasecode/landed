@@ -29,6 +29,7 @@ TEMPLATES: dict[str, str] = {
     ),
     "landed_credit": "Hi {{1}}, {{2}} has received your transfer of {{3}}. {{4}}",
     "landed_seller_alert": "{{1}} paid {{2}} for {{3}}. {{4}}",
+    "landed_payout_sent": "💸 {{1}} from {{2}} has been sent to your {{3}} account. See all payouts: {{4}}",
     "landed_seller_unmatched": "A payment of {{1}} from {{2}} could not be matched automatically. Assign it here: {{3}}",
 }
 
