@@ -42,3 +42,8 @@ class Command(BaseCommand):
                 call_command("flow_test")
             except Exception as e:  # never block startup
                 self.stdout.write(f"FLOW crashed: {type(e).__name__}: {e}")
+        if os.getenv("RESET_FOR_LIVE") == "1":
+            try:
+                call_command("reset_for_live")
+            except Exception as e:  # never block startup
+                self.stdout.write(f"RESET_FOR_LIVE crashed: {type(e).__name__}: {e}")
