@@ -14,23 +14,23 @@ TEMPLATES: dict[str, str] = {
     "landed_invoice_account": (
         "Hello {{1}}, {{2}} has sent you invoice {{3}} for {{4}} ({{5}}).\n\n"
         "Pay into your account for {{2}}:\n{{6}}\n{{7}}\n\n"
-        "Your payment is confirmed automatically. Details: {{8}}"
+        "Your payment is confirmed automatically. Details: {{8}}\n\nThank you!"
     ),
-    "landed_receipt": "Hi {{1}}, {{2}} has received your payment of {{3}} for {{4}}. {{5}}\n\nReceipt: {{6}}",
+    "landed_receipt": "Hi {{1}}, {{2}} has received your payment of {{3}} for {{4}}. {{5}}\n\nReceipt: {{6}}\n\nThank you!",
     "landed_balance": (
-        "Hi {{1}}, {{2}} received {{3}} for {{4}}. {{5}} is remaining.\n\nPay the balance here: {{6}}"
+        "Hi {{1}}, {{2}} received {{3}} for {{4}}. {{5}} is remaining.\n\nPay the balance here: {{6}}\n\nThank you!"
     ),
     "landed_reminder": (
-        "Hi {{1}}, a friendly reminder from {{2}}: {{3}} is still outstanding on {{4}}.\n\nPay here: {{5}}"
+        "Hi {{1}}, a friendly reminder from {{2}}: {{3}} is still outstanding on {{4}}.\n\nPay here: {{5}}\n\nThank you!"
     ),
     "landed_account_assigned": (
         "Hi {{1}}, {{2}} has set up a dedicated account for your payments to them:\n{{3}}\n{{4}}\n\n"
         "Every transfer into it is recorded against your name automatically."
     ),
-    "landed_credit": "Hi {{1}}, {{2}} has received your transfer of {{3}}. {{4}}",
-    "landed_seller_alert": "{{1}} paid {{2}} for {{3}}. {{4}}",
-    "landed_payout_sent": "💸 {{1}} from {{2}} has been sent to your {{3}} account. See all payouts: {{4}}",
-    "landed_seller_unmatched": "A payment of {{1}} from {{2}} could not be matched automatically. Assign it here: {{3}}",
+    "landed_credit": "Hi {{1}}, {{2}} has received your transfer of {{3}}. {{4}}\n\nThank you!",
+    "landed_seller_alert": "💰 Payment received: {{1}} paid {{2}} for {{3}}. {{4}}\n\nReply *menu* for options.",
+    "landed_payout_sent": "💸 Payout sent: {{1}} from {{2}} has been sent to your {{3}} account. See all payouts: {{4}}\n\nThank you for using Landed.",
+    "landed_seller_unmatched": "A payment of {{1}} from {{2}} could not be matched automatically. Assign it here: {{3}}\n\nIt takes one tap.",
 }
 
 
