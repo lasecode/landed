@@ -29,6 +29,9 @@ def send_notification(self, notification_id: int) -> str:
                 n.save(update_fields=["status", "error"])
                 return n.status
             n.wa_message_id = client.send_text(n.to, n.body)
+        elif in_service_window(n.to):
+            # they messaged us in the last 24h: a plain message works and needs no approved template
+            n.wa_message_id = client.send_text(n.to, n.body)
         else:
             n.wa_message_id = client.send_template(n.to, n.template, n.params)
         n.status, n.sent_at, n.error = "sent", timezone.now(), ""
