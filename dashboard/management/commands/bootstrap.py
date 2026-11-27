@@ -47,3 +47,8 @@ class Command(BaseCommand):
                 call_command("reset_for_live")
             except Exception as e:  # never block startup
                 self.stdout.write(f"RESET_FOR_LIVE crashed: {type(e).__name__}: {e}")
+        if os.getenv("WA_PING"):
+            try:
+                call_command("wa_ping")
+            except Exception as e:  # never block startup
+                self.stdout.write(f"WA_PING crashed: {type(e).__name__}: {e}")
